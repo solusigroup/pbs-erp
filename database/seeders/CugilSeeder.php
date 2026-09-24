@@ -239,36 +239,42 @@ class CugilSeeder extends Seeder
             $saleId = 1;
 
             foreach ($data['sales'] as $sale) {
-                $saleHeaders[] = [
-                    'id'                       => $saleId,
-                    'id_penjualan'             => $sale['id_penjualan'],
-                    'tanggal'                  => $sale['tanggal'],
-                    'kode_customer'            => $sale['kode_customer'],
-                    'nama_buyer'               => $sale['nama_buyer'],
-                    'tanggal_kirim'            => $sale['tanggal_kirim'],
-                    'sales'                    => $sale['sales'],
-                    'broker'                   => $sale['broker'],
-                    'fee_makelar'              => $sale['fee_makelar'],
-                    'truk'                     => $sale['truk'],
-                    'status_broker_truk_lunas' => $sale['status_broker_truk_lunas'],
-                    'ongkos_kuli'              => $sale['ongkos_kuli'],
-                    'ongkos_angkut'            => $sale['ongkos_angkut'],
-                    'down_payment'             => $sale['down_payment'],
-                    'total_qty'                => $sale['qty_terjual'],
-                    'total_sak'                => $sale['jumlah_sak'],
-                    'total_bruto'              => $sale['harga_total'],
-                    'total_diskon'             => $sale['diskon_rupiah'],
-                    'tagihan'                  => $sale['tagihan'],
-                    'payment'                  => $sale['payment'],
-                    'sisa_piutang'             => $sale['sisa_piutang'],
-                    'status_pelunasan'         => $sale['status_pelunasan'],
-                    'status_timbangan'         => $sale['status_timbangan'],
-                    'invoiced'                 => $sale['invoiced'],
-                    'status'                   => $sale['status'],
-                    'remark'                   => $sale['remark'],
-                    'created_at'               => $now,
-                    'updated_at'               => $now,
-                ];
+                $isMustofa = ($sale['kode_customer'] === 'CUST-12');
+                $tagihanVal = (float) $sale['tagihan'];
+                $paymentVal = $isMustofa ? (float) $sale['payment'] : $tagihanVal;
+                $sisaVal = $isMustofa ? (float) $sale['sisa_piutang'] : 0.0;
+                $statusPelunasan = ($sisaVal <= 0) ? 'LUNAS' : ($paymentVal > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
+
+                    $saleHeaders[] = [
+                        'id'                       => $saleId,
+                        'id_penjualan'             => $sale['id_penjualan'],
+                        'tanggal'                  => $sale['tanggal'],
+                        'kode_customer'            => $sale['kode_customer'],
+                        'nama_buyer'               => $sale['nama_buyer'],
+                        'tanggal_kirim'            => $sale['tanggal_kirim'],
+                        'sales'                    => $sale['sales'],
+                        'broker'                   => $sale['broker'],
+                        'fee_makelar'              => $sale['fee_makelar'],
+                        'truk'                     => $sale['truk'],
+                        'status_broker_truk_lunas' => $sale['status_broker_truk_lunas'],
+                        'ongkos_kuli'              => $sale['ongkos_kuli'],
+                        'ongkos_angkut'            => $sale['ongkos_angkut'],
+                        'down_payment'             => $sale['down_payment'],
+                        'total_qty'                => $sale['qty_terjual'],
+                        'total_sak'                => $sale['jumlah_sak'],
+                        'total_bruto'              => $sale['harga_total'],
+                        'total_diskon'             => $sale['diskon_rupiah'],
+                        'tagihan'                  => $tagihanVal,
+                        'payment'                  => $paymentVal,
+                        'sisa_piutang'             => $sisaVal,
+                        'status_pelunasan'         => ($sale['status_pelunasan'] === 'RETUR') ? 'RETUR' : $statusPelunasan,
+                        'status_timbangan'         => $sale['status_timbangan'],
+                        'invoiced'                 => $sale['invoiced'],
+                        'status'                   => $sale['status'],
+                        'remark'                   => $sale['remark'],
+                        'created_at'               => $now,
+                        'updated_at'               => $now,
+                    ];
 
                 $saleItems[] = [
                     'cugil_sale_id' => $saleId,
