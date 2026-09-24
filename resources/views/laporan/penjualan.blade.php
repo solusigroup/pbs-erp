@@ -49,7 +49,9 @@
                 <select name="status" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
                     <option value="">-- Semua Status --</option>
                     <option value="LUNAS" {{ request('status') == 'LUNAS' ? 'selected' : '' }}>LUNAS</option>
+                    <option value="SEBAGIAN" {{ request('status') == 'SEBAGIAN' ? 'selected' : '' }}>SEBAGIAN</option>
                     <option value="BELUM LUNAS" {{ request('status') == 'BELUM LUNAS' ? 'selected' : '' }}>BELUM LUNAS</option>
+                    <option value="RETUR" {{ request('status') == 'RETUR' ? 'selected' : '' }}>RETUR</option>
                 </select>
             </div>
             <div>

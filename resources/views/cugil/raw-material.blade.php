@@ -93,6 +93,7 @@
             <select name="status" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
                 <option value="">Semua Status</option>
                 <option value="LUNAS" {{ request('status') == 'LUNAS' ? 'selected' : '' }}>LUNAS</option>
+                <option value="SEBAGIAN" {{ request('status') == 'SEBAGIAN' ? 'selected' : '' }}>SEBAGIAN</option>
                 <option value="BELUM LUNAS" {{ request('status') == 'BELUM LUNAS' ? 'selected' : '' }}>BELUM LUNAS</option>
             </select>
         </div>
