@@ -72,6 +72,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->role === 'admin' || $this->role === 'bod';
     }
 
+    public function isReadOnly(): bool
+    {
+        return in_array($this->role, ['auditor', 'komisaris', 'viewer']);
+    }
+
+    public function canMutate(): bool
+    {
+        return !$this->isReadOnly();
+    }
+
     public function hasPermission(string $permission): bool
     {
         if ($this->isBOD() || $this->role === 'admin') {

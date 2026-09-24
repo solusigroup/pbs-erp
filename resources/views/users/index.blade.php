@@ -149,6 +149,7 @@
                                 'tax_officer' => 'bg-purple-500/10 text-purple-400 border-purple-500/30',
                                 'cugil_operator' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
                                 'staff' => 'bg-slate-700/50 text-slate-300 border-slate-600',
+                                'auditor' => 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
                             ];
                             $badgeClass = $roleBadges[$u->role] ?? 'bg-slate-800 text-slate-300 border-slate-700';
                             $initials = strtoupper(substr($u->name, 0, 1));

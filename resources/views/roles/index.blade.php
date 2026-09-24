@@ -37,6 +37,7 @@
                     'tax_officer' => 'from-purple-600/20 to-violet-600/10 border-purple-500/40 text-purple-400',
                     'cugil_operator' => 'from-emerald-600/20 to-teal-600/10 border-emerald-500/40 text-emerald-400',
                     'staff' => 'from-slate-700/30 to-slate-800/20 border-slate-700 text-slate-300',
+                    'auditor' => 'from-cyan-600/20 to-sky-600/10 border-cyan-500/40 text-cyan-400',
                 ];
                 $colorClass = $roleColors[$role->slug] ?? 'from-slate-800/40 to-slate-900/40 border-slate-800 text-slate-300';
                 $perms = $role->permissions ?? [];

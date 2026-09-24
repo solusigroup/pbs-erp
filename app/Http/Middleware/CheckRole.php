@@ -37,12 +37,24 @@ class CheckRole
             return $next($request);
         }
 
-        // 3. Jika tidak ada role spesifik yang diminta, izinkan
+        // 3. Proteksi Mutasi Data untuk Role Read-Only (Auditor, Komisaris, Viewer)
+        // Pengguna dengan role ini hanya diizinkan membaca (GET, HEAD, OPTIONS)
+        if ($user->isReadOnly() && in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Akses Dibatasi: Role Anda berstatus Read-Only (Hanya Lihat). Anda tidak memiliki hak untuk menambah, mengubah, atau menghapus data sistem.',
+                ], 403);
+            }
+
+            return back()->with('error', 'Akses Ditolak: Role ' . ($user->roleData->name ?? $user->role) . ' bersifat READ-ONLY (Hanya Pantau). Penambahan, perubahan, atau penghapusan data dibatasi oleh sistem.');
+        }
+
+        // 4. Jika tidak ada role spesifik yang diminta, izinkan
         if (empty($roles)) {
             return $next($request);
         }
 
-        // 4. Periksa apakah user memiliki salah satu role yang diizinkan
+        // 5. Periksa apakah user memiliki salah satu role yang diizinkan
         if (in_array($user->role, $roles)) {
             return $next($request);
         }
