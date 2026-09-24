@@ -530,4 +530,119 @@ class CugilTransaksiController extends Controller
         $perusahaan = Perusahaan::first();
         return view('cugil.print.tanda-terima-raw', compact('raw', 'perusahaan'));
     }
+
+    // ─── TRANSAKSI ROLLBACK & DELETE HANDLERS ────────────────────────────────────
+
+    /**
+     * Hapus Penjualan (CUGIL Sales) dengan Otomatis Rollback Stok Barang & Lampiran
+     */
+    public function destroySale($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $sale = CugilSale::with('items')->where('id', $id)->lockForUpdate()->firstOrFail();
+            $idPenjualan = $sale->id_penjualan;
+            $itemsCount = $sale->items->count();
+
+            // 1. Rollback Stok Keluar di Master Barang
+            foreach ($sale->items as $item) {
+                if (!empty($item->kode_barang)) {
+                    $barang = CugilBarang::where('kode_barang', $item->kode_barang)->lockForUpdate()->first();
+                    if ($barang) {
+                        // Kembalikan stok yang sebelumnya keluar
+                        $barang->barang_keluar = max(0, $barang->barang_keluar - (float) $item->qty_terjual);
+                        $barang->stok_akhir = $barang->stok_awal + $barang->barang_masuk - $barang->barang_keluar;
+                        $barang->save();
+                    }
+                }
+            }
+
+            // 2. Hapus file fisik foto slip timbangan dari storage jika ada
+            if ($sale->foto_timbangan) {
+                ImageCompressionService::deleteImage($sale->foto_timbangan);
+            }
+
+            // 3. Hapus item rincian penjualan
+            $sale->items()->delete();
+
+            // 4. Hapus record transaksi penjualan
+            $sale->delete();
+
+            return redirect()->route('cugil.sales.index')
+                ->with('success', "Transaksi Penjualan [{$idPenjualan}] berhasil dihapus. Stok {$itemsCount} SKU barang telah otomatis di-rollback ke gudang.");
+        });
+    }
+
+    /**
+     * Hapus Penerimaan Bahan Baku (CUGIL RAW) dengan Otomatis Rollback Stok & Status PO
+     */
+    public function destroyRawMaterial($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $raw = CugilRawMaterial::with('items')->where('id', $id)->lockForUpdate()->firstOrFail();
+            $nomorPO = $raw->nomor_po;
+            $itemsCount = $raw->items->count();
+            $namaPemasok = $raw->nama_pemasok ?? $raw->kode_supplier;
+
+            // 1. Rollback Stok Masuk di Master Barang
+            foreach ($raw->items as $item) {
+                if (!empty($item->kode_barang)) {
+                    $barang = CugilBarang::where('kode_barang', $item->kode_barang)->lockForUpdate()->first();
+                    if ($barang) {
+                        // Kurangi stok yang sebelumnya masuk
+                        $barang->barang_masuk = max(0, $barang->barang_masuk - (float) $item->qty);
+                        $barang->stok_akhir = $barang->stok_awal + $barang->barang_masuk - $barang->barang_keluar;
+                        $barang->save();
+                    }
+                }
+            }
+
+            // 2. Rollback Status PO Terkait menjadi 'Belum' jika tidak ada penerimaan RAW lain dengan nomor PO ini
+            if (!empty($nomorPO)) {
+                $otherRaw = CugilRawMaterial::where('nomor_po', $nomorPO)->where('id', '!=', $id)->exists();
+                if (!$otherRaw) {
+                    $po = CugilPurchaseOrder::where('nomor_po', $nomorPO)->lockForUpdate()->first();
+                    if ($po) {
+                        $po->status_terima = 'Belum';
+                        $po->save();
+                    }
+                }
+            }
+
+            // 3. Hapus item rincian bahan masuk
+            $raw->items()->delete();
+
+            // 4. Hapus data penerimaan bahan baku
+            $raw->delete();
+
+            $msg = "Penerimaan Bahan Baku dari [{$namaPemasok}] berhasil dihapus. Stok {$itemsCount} item telah di-rollback.";
+            if (!empty($nomorPO) && isset($po)) {
+                $msg .= " Status PO [{$nomorPO}] telah dikembalikan menjadi 'Belum Diterima'.";
+            }
+
+            return redirect()->route('cugil.raw.index')->with('success', $msg);
+        });
+    }
+
+    /**
+     * Hapus Purchase Order (CUGIL PO)
+     */
+    public function destroyPurchaseOrder($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $po = CugilPurchaseOrder::with(['items', 'rawMaterials'])->where('id', $id)->lockForUpdate()->firstOrFail();
+            $nomorPO = $po->nomor_po;
+
+            // Validasi: Cek apakah PO sudah memiliki penerimaan RAW aktif
+            if ($po->rawMaterials()->count() > 0) {
+                return back()->with('error', "PO [{$nomorPO}] tidak dapat dihapus karena sudah ada penerimaan bahan baku (RAW) tercatat. Hapus transaksi penerimaan bahan bakunya terlebih dahulu.");
+            }
+
+            // Hapus items PO
+            $po->items()->delete();
+            $po->delete();
+
+            return redirect()->route('cugil.po.index')->with('success', "Purchase Order [{$nomorPO}] berhasil dihapus.");
+        });
+    }
 }
+

@@ -167,6 +167,15 @@
                                     <i class="fas fa-eye mr-1"></i>RAW
                                 </a>
                             @endif
+                            @if(auth()->user()->canMutate())
+                            <form action="{{ route('cugil.po.destroy', $po->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS Purchase Order {{ $po->nomor_po }}?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="inline-flex items-center px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs transition" title="Hapus PO">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
+                            @endif
                         </div>
                     </td>
                 </tr>

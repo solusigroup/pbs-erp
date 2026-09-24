@@ -197,6 +197,13 @@
                             <button onclick="document.getElementById('modalBayarRaw{{ $raw->id }}').classList.remove('hidden')" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-xs transition" title="Update Pelunasan">
                                 <i class="fas fa-money-bill-wave mr-1"></i>Bayar
                             </button>
+                            <form action="{{ route('cugil.raw.destroy', $raw->id) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS penerimaan bahan baku ini ({{ $raw->nama_pemasok }})?\n\n- Stok barang yang masuk akan OTOMATIS DIKURANGI/ROLLBACK dari gudang!\n- Jika terkait PO, status PO akan otomatis dikembalikan menjadi Belum Diterima!')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="px-2 py-1 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded text-xs transition" title="Hapus Bahan Masuk & Rollback Stok">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
                             @endif
                         </div>
                     </td>

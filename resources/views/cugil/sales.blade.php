@@ -198,6 +198,13 @@
                             <button onclick="document.getElementById('modalBayarSale{{ $s->id }}').classList.remove('hidden')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition" title="Update Pelunasan & Data">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            <form action="{{ route('cugil.sales.destroy', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS penjualan {{ $s->id_penjualan }}?\n\nSemua stok barang yang keluar pada penjualan ini akan OTOMATIS DI-ROLLBACK (dikembalikan) ke stok gudang!')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="px-2 py-1 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded text-xs transition" title="Hapus Penjualan & Rollback Stok">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
                             @endif
                         </div>
                     </td>

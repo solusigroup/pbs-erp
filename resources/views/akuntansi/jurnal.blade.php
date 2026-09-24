@@ -209,6 +209,16 @@
                             <i class="fas fa-print text-amber-400"></i>
                             <span>Bukti</span>
                         </a>
+                        @if(auth()->user()->canMutate())
+                        <form action="{{ route('akuntansi.destroyJurnal', $j->id_jurnal) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Hapus jurnal umum {{ $j->no_transaksi }}?\n\nSaldo mutasi pada seluruh akun buku besar (COA) terkait akan OTOMATIS DI-ROLLBACK!')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-semibold border border-rose-500/30 transition flex items-center gap-1" title="Hapus Jurnal & Rollback Saldo Buku Besar">
+                                <i class="fas fa-trash-can"></i>
+                                <span>Hapus</span>
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </div>
 

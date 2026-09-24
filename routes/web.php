@@ -68,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/',             [CugilTransaksiController::class, 'purchaseOrders'])->name('index');
             Route::post('/',            [CugilTransaksiController::class, 'storePurchaseOrder'])->name('store');
             Route::get('/{id}/print',   [CugilTransaksiController::class, 'printPurchaseOrder'])->name('print');
+            Route::delete('/{id}',      [CugilTransaksiController::class, 'destroyPurchaseOrder'])->name('destroy');
         });
 
         // Transaksi: Terima Bahan Baku (CUGIL RAW)
@@ -76,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/',                [CugilTransaksiController::class, 'storeRawMaterial'])->name('store');
             Route::put('/{id}/status',      [CugilTransaksiController::class, 'updateRawMaterialStatus'])->name('updateStatus');
             Route::get('/{id}/tanda-terima',[CugilTransaksiController::class, 'printTandaTerimaRaw'])->name('tanda-terima');
+            Route::delete('/{id}',          [CugilTransaksiController::class, 'destroyRawMaterial'])->name('destroy');
         });
 
         // Transaksi: Penjualan Hasil Cuci Giling (CUGIL SALES)
@@ -89,6 +91,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/surat-jalan', [CugilTransaksiController::class, 'printSuratJalan'])->name('surat-jalan');
             Route::get('/{id}/invoice',     [CugilTransaksiController::class, 'printInvoice'])->name('invoice');
             Route::get('/{id}/faktur-pajak',[CugilTransaksiController::class, 'printFakturPajak'])->name('faktur-pajak');
+            Route::delete('/{id}',          [CugilTransaksiController::class, 'destroySale'])->name('destroy');
         });
     });
 
@@ -114,6 +117,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/jurnal',              [AkuntansiController::class, 'jurnal'])->name('jurnal');
         Route::post('/jurnal',             [AkuntansiController::class, 'storeJurnal'])->name('storeJurnal');
 
+        // Hapus Jurnal & Rollback Saldo Buku Besar
+        Route::delete('/jurnal/{id}',      [AkuntansiController::class, 'destroyJurnal'])->name('destroyJurnal');
+
         // Laporan Keuangan (Laba Rugi & Neraca)
         Route::get('/laporan',             [AkuntansiController::class, 'laporan'])->name('laporan');
 
@@ -123,6 +129,7 @@ Route::middleware(['auth'])->group(function () {
         // Cetak Bukti / Voucher
         Route::get('/voucher/{id}',        [AkuntansiController::class, 'printVoucher'])->name('voucher');
     });
+
 
     // ── Modul Pajak ──────────────────────────────────────────────────────────
     Route::prefix('pajak')->name('pajak.')->group(function () {

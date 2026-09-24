@@ -860,4 +860,53 @@ class AkuntansiController extends Controller
             return back()->with('error', 'Terjadi kesalahan sistem saat memproses impor: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Hapus Jurnal (Kas/Bank/Memorial) dengan Otomatis Rollback Saldo Buku Besar COA
+     */
+    public function destroyJurnal($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $jurnal = JurnalUmum::with('details')->where('id_jurnal', $id)->lockForUpdate()->firstOrFail();
+            $noTransaksi = $jurnal->no_transaksi;
+            $tipeJurnal = $jurnal->tipe_jurnal;
+            $detailsCount = $jurnal->details->count();
+
+            // 1. Rollback Saldo Berjalan pada setiap Akun (COA)
+            foreach ($jurnal->details as $detail) {
+                if (!empty($detail->kode_akun)) {
+                    $akun = Akun::where('kode_akun', $detail->kode_akun)->lockForUpdate()->first();
+                    if ($akun) {
+                        // Kebalikan dari saat posting:
+                        // Jika Saldo Normal Debit: Debit menambah (+), Kredit mengurangi (-)
+                        // Maka rollback: Debit dikurangkan (-), Kredit ditambahkan (+)
+                        if ($akun->saldo_normal === 'Debit') {
+                            $akun->saldo_berjalan -= ((float) $detail->debit - (float) $detail->kredit);
+                        } else {
+                            // Saldo Normal Kredit: Kredit menambah (+), Debit mengurangi (-)
+                            // Maka rollback: Kredit dikurangkan (-), Debit ditambahkan (+)
+                            $akun->saldo_berjalan -= ((float) $detail->kredit - (float) $detail->debit);
+                        }
+                        $akun->save();
+                    }
+                }
+            }
+
+            // 2. Hapus baris detail debit/kredit
+            $jurnal->details()->delete();
+
+            // 3. Hapus header jurnal
+            $jurnal->delete();
+
+            $redirectRoute = str_contains($tipeJurnal, 'Kas') || $tipeJurnal === 'Transfer'
+                ? route('akuntansi.jurnal-kas')
+                : route('akuntansi.jurnal');
+
+            return redirect($redirectRoute)->with(
+                'success',
+                "Jurnal [{$noTransaksi}] ({$tipeJurnal}) berhasil dihapus. Saldo berjalan pada {$detailsCount} akun perkiraan (COA) telah otomatis di-rollback."
+            );
+        });
+    }
 }
+

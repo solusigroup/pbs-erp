@@ -270,10 +270,21 @@
                                 {{ $j->created_by ?? 'System' }}
                             </td>
                             <td class="py-3 px-4 text-center whitespace-nowrap">
-                                <a href="{{ route('akuntansi.voucher', $j->id_jurnal) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700 transition inline-flex items-center gap-1.5" title="Cetak Bukti / Voucher Resmi">
-                                    <i class="fas fa-print text-amber-400"></i>
-                                    <span>Bukti</span>
-                                </a>
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('akuntansi.voucher', $j->id_jurnal) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700 transition inline-flex items-center gap-1.5" title="Cetak Bukti / Voucher Resmi">
+                                        <i class="fas fa-print text-amber-400"></i>
+                                        <span>Bukti</span>
+                                    </a>
+                                    @if(auth()->user()->canMutate())
+                                    <form action="{{ route('akuntansi.destroyJurnal', $j->id_jurnal) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Hapus transaksi kas {{ $j->no_transaksi }}?\n\nSaldo kas/bank dan mutasi buku besar COA terkait akan OTOMATIS DI-ROLLBACK!')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-semibold border border-rose-500/30 transition flex items-center gap-1" title="Hapus Transaksi Kas & Rollback Saldo">
+                                            <i class="fas fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
