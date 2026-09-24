@@ -58,6 +58,99 @@ class AkuntansiController extends Controller
     }
 
     /**
+     * Tambah Akun COA Baru (Khusus Superuser / BOD / Admin)
+     */
+    public function storeAkun(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            return back()->with('error', 'Akses Ditolak: Hanya Superuser (BOD / Administrator) yang dapat menambah Chart of Accounts (COA).');
+        }
+
+        $request->validate([
+            'kode_akun' => 'required|string|max:20|unique:akun,kode_akun',
+            'nama_akun' => 'required|string|max:150',
+            'kategori' => 'required|string|in:Aset Lancar,Aset Tetap,Kewajiban,Ekuitas,Pendapatan,Beban',
+            'tipe_akun' => 'required|string|max:50',
+            'saldo_normal' => 'required|in:Debit,Kredit',
+            'saldo_awal' => 'nullable|numeric',
+        ]);
+
+        $saldoAwal = (float) ($request->saldo_awal ?? 0);
+
+        Akun::create([
+            'kode_akun' => trim($request->kode_akun),
+            'nama_akun' => trim($request->nama_akun),
+            'kategori' => $request->kategori,
+            'tipe_akun' => $request->tipe_akun,
+            'saldo_normal' => $request->saldo_normal,
+            'saldo_awal' => $saldoAwal,
+            'saldo_berjalan' => $saldoAwal,
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('akuntansi.index')
+            ->with('success', "Akun COA [{$request->kode_akun}] {$request->nama_akun} berhasil ditambahkan ke bagan akun resmi.");
+    }
+
+    /**
+     * Update Akun COA (Khusus Superuser / BOD / Admin)
+     */
+    public function updateAkun(Request $request, $kode_akun)
+    {
+        if (!auth()->user()->isAdmin()) {
+            return back()->with('error', 'Akses Ditolak: Hanya Superuser (BOD / Administrator) yang dapat mengubah data akun COA.');
+        }
+
+        $akun = Akun::where('kode_akun', $kode_akun)->firstOrFail();
+
+        $request->validate([
+            'nama_akun' => 'required|string|max:150',
+            'kategori' => 'required|string|in:Aset Lancar,Aset Tetap,Kewajiban,Ekuitas,Pendapatan,Beban',
+            'tipe_akun' => 'required|string|max:50',
+            'saldo_normal' => 'required|in:Debit,Kredit',
+            'saldo_awal' => 'nullable|numeric',
+        ]);
+
+        $saldoAwalLama = (float) $akun->saldo_awal;
+        $saldoAwalBaru = (float) ($request->saldo_awal ?? 0);
+        $selisihSaldoAwal = $saldoAwalBaru - $saldoAwalLama;
+
+        $akun->nama_akun = trim($request->nama_akun);
+        $akun->kategori = $request->kategori;
+        $akun->tipe_akun = $request->tipe_akun;
+        $akun->saldo_normal = $request->saldo_normal;
+        $akun->saldo_awal = $saldoAwalBaru;
+        $akun->saldo_berjalan += $selisihSaldoAwal;
+        $akun->save();
+
+        return redirect()->route('akuntansi.index')
+            ->with('success', "Akun COA [{$akun->kode_akun}] {$akun->nama_akun} berhasil diperbarui.");
+    }
+
+    /**
+     * Hapus Akun COA (Khusus Superuser / BOD / Admin) dengan Validasi Dependensi
+     */
+    public function destroyAkun($kode_akun)
+    {
+        if (!auth()->user()->isAdmin()) {
+            return back()->with('error', 'Akses Ditolak: Hanya Superuser (BOD / Administrator) yang memiliki wewenang menghapus akun COA.');
+        }
+
+        $akun = Akun::withCount('detailJurnal')->where('kode_akun', $kode_akun)->firstOrFail();
+
+        // Validasi: Tidak boleh menghapus akun yang telah memiliki riwayat mutasi / jurnal
+        if ($akun->detail_jurnal_count > 0) {
+            return back()->with('error', "Akun [{$akun->kode_akun}] {$akun->nama_akun} tidak dapat dihapus karena sudah memiliki {$akun->detail_jurnal_count} transaksi jurnal tercatat. Hapus transaksi terkait terlebih dahulu atau gunakan fitur nonaktif.");
+        }
+
+        $namaAkun = $akun->nama_akun;
+        $akun->delete();
+
+        return redirect()->route('akuntansi.index')
+            ->with('success', "Akun COA [{$kode_akun}] {$namaAkun} berhasil dihapus dari bagan akun.");
+    }
+
+    /**
      * Jurnal Kas & Bank (BKM - Kas Masuk, BKK - Kas Keluar, Mutasi Transfer)
      * Signature simpleakunting 3-6 architecture.
      */

@@ -98,6 +98,9 @@ Route::middleware(['auth'])->group(function () {
     // ── Modul Akuntansi (SimpleAkunting 3-6) ──────────────────────────────────
     Route::prefix('akuntansi')->name('akuntansi.')->group(function () {
         Route::get('/',                    [AkuntansiController::class, 'index'])->name('index');
+        Route::post('/akun',               [AkuntansiController::class, 'storeAkun'])->name('akun.store');
+        Route::put('/akun/{kode_akun}',    [AkuntansiController::class, 'updateAkun'])->name('akun.update');
+        Route::delete('/akun/{kode_akun}', [AkuntansiController::class, 'destroyAkun'])->name('akun.destroy');
         
         // Jurnal Kas & Bank (BKM, BKK, Mutasi Transfer)
         Route::get('/jurnal-kas',          [AkuntansiController::class, 'jurnalKas'])->name('jurnal-kas');
