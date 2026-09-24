@@ -36,6 +36,13 @@
                 <i class="fas fa-plus"></i>
                 <span>+ Tambah Akun COA</span>
             </button>
+            <form action="{{ route('akuntansi.akun.resetSaldoAwal') }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN KRUSIAL:\n\nApakah Anda yakin ingin me-NOL-kan (0) SEMUA SALDO AWAL akun Chart of Accounts (COA)?\n\nSetelah di-reset, saldo berjalan pada semua akun akan murni dihitung dari mutasi jurnal yang ada!')">
+                @csrf
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-bold transition flex items-center gap-2 shadow-lg" title="Nolkan Semua Saldo Awal">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>Nolkan Saldo Awal</span>
+                </button>
+            </form>
             @endif
         </div>
     </div>

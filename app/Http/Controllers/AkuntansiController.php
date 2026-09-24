@@ -151,6 +151,36 @@ class AkuntansiController extends Controller
     }
 
     /**
+     * Nolkan Semua Saldo Awal Akun COA (Khusus Superuser / BOD / Admin)
+     */
+    public function resetSaldoAwal(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            return back()->with('error', 'Akses Ditolak: Hanya Superuser (BOD / Administrator) yang dapat me-reset saldo awal.');
+        }
+
+        DB::transaction(function () {
+            // Set saldo_awal = 0 dan sesuaikan saldo_berjalan
+            $akuns = Akun::with('detailJurnal')->get();
+            foreach ($akuns as $a) {
+                $totalDebit = $a->detailJurnal->sum('debit');
+                $totalKredit = $a->detailJurnal->sum('kredit');
+
+                $a->saldo_awal = 0;
+                if ($a->saldo_normal === 'Debit') {
+                    $a->saldo_berjalan = $totalDebit - $totalKredit;
+                } else {
+                    $a->saldo_berjalan = $totalKredit - $totalDebit;
+                }
+                $a->save();
+            }
+        });
+
+        return redirect()->route('akuntansi.index')
+            ->with('success', 'Seluruh Saldo Awal akun COA berhasil di-NOL-kan (0). Saldo berjalan kini murni bersumber dari mutasi transaksi.');
+    }
+
+    /**
      * Jurnal Kas & Bank (BKM - Kas Masuk, BKK - Kas Keluar, Mutasi Transfer)
      * Signature simpleakunting 3-6 architecture.
      */

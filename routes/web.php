@@ -99,6 +99,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('akuntansi')->name('akuntansi.')->group(function () {
         Route::get('/',                    [AkuntansiController::class, 'index'])->name('index');
         Route::post('/akun',               [AkuntansiController::class, 'storeAkun'])->name('akun.store');
+        Route::post('/akun/reset-saldo-awal', [AkuntansiController::class, 'resetSaldoAwal'])->name('akun.resetSaldoAwal');
         Route::put('/akun/{kode_akun}',    [AkuntansiController::class, 'updateAkun'])->name('akun.update');
         Route::delete('/akun/{kode_akun}', [AkuntansiController::class, 'destroyAkun'])->name('akun.destroy');
         
