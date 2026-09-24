@@ -95,7 +95,8 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Sinkronisasi Anomali Status & Saldo Hutang/Piutang
-        Route::post('/sync-anomali',         [CugilTransaksiController::class, 'syncAnomaliData'])->name('syncAnomali');
+        Route::post('/sync-anomali',            [CugilTransaksiController::class, 'syncAnomaliData'])->name('syncAnomali');
+        Route::post('/lunaskan-semua-piutang',  [CugilTransaksiController::class, 'lunaskanSemuaPiutang'])->name('lunaskanSemuaPiutang');
     });
 
     // ── Modul Akuntansi (SimpleAkunting 3-6) ──────────────────────────────────

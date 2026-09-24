@@ -725,5 +725,31 @@ class CugilTransaksiController extends Controller
             return back()->with('success', "Sinkronisasi berhasil! Penjualan: {$salesStatusCount} status & {$salesMathCount} sisa piutang diselaraskan. Pembelian: {$rawStatusCount} status & {$rawMathCount} sisa hutang diselaraskan.");
         });
     }
+
+    /**
+     * Penyesuaian Faktual: Nolkan Seluruh Sisa Piutang Penjualan & Set Status LUNAS
+     */
+    public function lunaskanSemuaPiutang()
+    {
+        return DB::transaction(function () {
+            // 1. Update seluruh penjualan: set payment = tagihan, sisa_piutang = 0, status_pelunasan = LUNAS (kecuali RETUR)
+            $updatedSales = 0;
+            $sales = CugilSale::where('sisa_piutang', '>', 0)->get();
+            foreach ($sales as $sale) {
+                $sale->payment = $sale->tagihan;
+                $sale->sisa_piutang = 0;
+                if ($sale->status_pelunasan !== 'RETUR') {
+                    $sale->status_pelunasan = 'LUNAS';
+                }
+                $sale->save();
+                $updatedSales++;
+            }
+
+            // 2. Nolkan piutang di master data customer
+            CugilCustomer::query()->update(['piutang' => 0]);
+
+            return back()->with('success', "Penyesuaian faktual berhasil! Sebanyak {$updatedSales} transaksi penjualan telah dilunaskan penuh (Sisa Piutang = Rp 0, Status = LUNAS), dan seluruh piutang master customer telah menjadi Rp 0.");
+        });
+    }
 }
 

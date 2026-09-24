@@ -9,6 +9,12 @@
         </div>
         @if(auth()->user()->canMutate())
         <div class="flex items-center gap-2">
+            <form action="{{ route('cugil.lunaskanSemuaPiutang') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyesuaikan seluruh data penjualan menjadi LUNAS (Sisa Piutang = Rp 0)?')">
+                @csrf
+                <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20" title="Sesuaikan faktual: Nolkan semua sisa piutang penjualan dan jadikan LUNAS">
+                    <i class="fas fa-check-double text-xs"></i> Nolkan Sisa Piutang
+                </button>
+            </form>
             <form action="{{ route('cugil.syncAnomali') }}" method="POST" onsubmit="return confirm('Jalankan audit & sinkronisasi otomatis status pelunasan dan sisa hutang/piutang?')">
                 @csrf
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20" title="Sinkronkan status pelunasan LUNAS/SEBAGIAN/BELUM LUNAS dan koreksi selisih hitung">

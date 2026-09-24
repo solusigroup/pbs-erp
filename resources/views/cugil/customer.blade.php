@@ -8,7 +8,15 @@
             <p class="text-gray-400 text-sm mt-1">Master data pembeli hasil cuci giling</p>
         </div>
         @if(auth()->user()->canMutate())
-        <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Kastamer</button>
+        <div class="flex items-center gap-2">
+            <form action="{{ route('cugil.lunaskanSemuaPiutang') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyesuaikan seluruh data penjualan menjadi LUNAS (Sisa Piutang = Rp 0)?')">
+                @csrf
+                <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20" title="Sesuaikan faktual: Nolkan semua sisa piutang penjualan dan jadikan LUNAS">
+                    <i class="fas fa-check-double text-xs"></i> Nolkan Sisa Piutang
+                </button>
+            </form>
+            <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Kastamer</button>
+        </div>
         @else
         <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
             <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
