@@ -727,14 +727,17 @@ class CugilTransaksiController extends Controller
     }
 
     /**
-     * Penyesuaian Faktual: Nolkan Seluruh Sisa Piutang Penjualan & Set Status LUNAS
+     * Penyesuaian Faktual: Nolkan Seluruh Sisa Piutang Penjualan Selain MUSTOFA (CUST-12) & Set Status LUNAS
      */
     public function lunaskanSemuaPiutang()
     {
         return DB::transaction(function () {
-            // 1. Update seluruh penjualan: set payment = tagihan, sisa_piutang = 0, status_pelunasan = LUNAS (kecuali RETUR)
+            // 1. Update seluruh penjualan selain Mustofa (CUST-12): set payment = tagihan, sisa_piutang = 0, status_pelunasan = LUNAS (kecuali RETUR)
             $updatedSales = 0;
-            $sales = CugilSale::where('sisa_piutang', '>', 0)->get();
+            $sales = CugilSale::where('kode_customer', '!=', 'CUST-12')
+                ->where('sisa_piutang', '>', 0)
+                ->get();
+
             foreach ($sales as $sale) {
                 $sale->payment = $sale->tagihan;
                 $sale->sisa_piutang = 0;
@@ -745,10 +748,18 @@ class CugilTransaksiController extends Controller
                 $updatedSales++;
             }
 
-            // 2. Nolkan piutang di master data customer
-            CugilCustomer::query()->update(['piutang' => 0]);
+            // 2. Nolkan piutang di master data customer selain CUST-12 (Mustofa)
+            CugilCustomer::where('kode_customer', '!=', 'CUST-12')->update(['piutang' => 0]);
 
-            return back()->with('success', "Penyesuaian faktual berhasil! Sebanyak {$updatedSales} transaksi penjualan telah dilunaskan penuh (Sisa Piutang = Rp 0, Status = LUNAS), dan seluruh piutang master customer telah menjadi Rp 0.");
+            // 3. Pastikan saldo piutang Mustofa tersinkronisasi presisi sesuai sisa transaksi Mustofa
+            $totalSisaMustofa = CugilSale::where('kode_customer', 'CUST-12')->sum('sisa_piutang');
+            $custMustofa = CugilCustomer::where('kode_customer', 'CUST-12')->first();
+            if ($custMustofa) {
+                $custMustofa->piutang = $totalSisaMustofa;
+                $custMustofa->save();
+            }
+
+            return back()->with('success', "Penyesuaian faktual berhasil! {$updatedSales} transaksi penjualan selain Mustofa telah diset LUNAS (Sisa = Rp 0). Sisa piutang hanya tercatat untuk MUSTOFA (CUST-12) sebesar Rp " . number_format($totalSisaMustofa, 0, ',', '.') . ".");
         });
     }
 }
