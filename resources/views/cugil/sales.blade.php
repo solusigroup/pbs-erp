@@ -8,9 +8,17 @@
             <p class="text-gray-400 text-sm mt-1">Pencatatan faktur, pengiriman, &amp; arsip foto slip timbangan kastamer (dilengkapi kompresi otomatis hemat server)</p>
         </div>
         @if(auth()->user()->canMutate())
-        <button onclick="document.getElementById('modalTambahSale').classList.remove('hidden')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-emerald-600/30 transition">
-            <i class="fas fa-plus mr-1.5"></i>Input Faktur Penjualan (Multi-Item)
-        </button>
+        <div class="flex items-center gap-2">
+            <form action="{{ route('cugil.syncAnomali') }}" method="POST" onsubmit="return confirm('Jalankan audit & sinkronisasi otomatis status pelunasan dan sisa hutang/piutang?')">
+                @csrf
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20" title="Sinkronkan status pelunasan LUNAS/SEBAGIAN/BELUM LUNAS dan koreksi selisih hitung">
+                    <i class="fas fa-sync-alt text-xs"></i> Sinkron Status & Saldo
+                </button>
+            </form>
+            <button onclick="document.getElementById('modalTambahSale').classList.remove('hidden')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-emerald-600/30 transition">
+                <i class="fas fa-plus mr-1.5"></i>Input Faktur Penjualan (Multi-Item)
+            </button>
+        </div>
         @else
         <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
             <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
@@ -174,6 +182,8 @@
                     <td class="px-3 py-2.5 text-center whitespace-nowrap">
                         @if($s->status_pelunasan == 'LUNAS')
                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-900/70 text-green-300 border border-green-700">LUNAS</span>
+                        @elseif($s->status_pelunasan == 'SEBAGIAN')
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-900/70 text-amber-300 border border-amber-700">SEBAGIAN</span>
                         @elseif($s->status_pelunasan == 'RETUR')
                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-700 text-gray-300">RETUR</span>
                         @else

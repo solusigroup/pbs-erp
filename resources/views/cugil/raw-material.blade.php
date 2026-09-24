@@ -9,6 +9,12 @@
         </div>
         <div class="flex items-center gap-2.5">
             @if(auth()->user()->canMutate())
+            <form action="{{ route('cugil.syncAnomali') }}" method="POST" onsubmit="return confirm('Jalankan audit & sinkronisasi otomatis status pelunasan dan sisa hutang/piutang?')">
+                @csrf
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20" title="Sinkronkan status pelunasan LUNAS/SEBAGIAN/BELUM LUNAS dan koreksi selisih hitung">
+                    <i class="fas fa-sync-alt text-xs"></i> Sinkron Status & Saldo
+                </button>
+            </form>
             <button onclick="bukaModalRaw(null)" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-amber-600/30 transition text-sm">
                 <i class="fas fa-plus mr-1.5"></i>Input Bahan Masuk (Tarik PO / Manual)
             </button>
@@ -184,6 +190,8 @@
                     <td class="px-3 py-2.5 text-center whitespace-nowrap">
                         @if($raw->status_lunas == 'LUNAS')
                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-900/70 text-green-300 border border-green-700">LUNAS</span>
+                        @elseif($raw->status_lunas == 'SEBAGIAN')
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-900/70 text-amber-300 border border-amber-700">SEBAGIAN</span>
                         @else
                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-900/70 text-red-300 border border-red-700">BELUM</span>
                         @endif

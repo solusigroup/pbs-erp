@@ -93,6 +93,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/faktur-pajak',[CugilTransaksiController::class, 'printFakturPajak'])->name('faktur-pajak');
             Route::delete('/{id}',          [CugilTransaksiController::class, 'destroySale'])->name('destroy');
         });
+
+        // Sinkronisasi Anomali Status & Saldo Hutang/Piutang
+        Route::post('/sync-anomali',         [CugilTransaksiController::class, 'syncAnomaliData'])->name('syncAnomali');
     });
 
     // ── Modul Akuntansi (SimpleAkunting 3-6) ──────────────────────────────────

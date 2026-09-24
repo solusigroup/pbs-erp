@@ -258,8 +258,8 @@ class CugilTransaksiController extends Controller
 
             if ($request->filled('payment')) {
                 $raw->payment = (float) $request->payment;
-                $raw->sisa_tagihan = max(0, $raw->tagihan - $raw->payment);
-                $raw->status_lunas = $raw->sisa_tagihan <= 0 ? 'LUNAS' : 'BELUM LUNAS';
+                $raw->sisa_tagihan = max(0, round($raw->tagihan - $raw->payment, 2));
+                $raw->status_lunas = ($raw->sisa_tagihan <= 0) ? 'LUNAS' : ($raw->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
             }
             if ($request->filled('truk')) {
                 $raw->truk = $request->truk;
@@ -428,8 +428,8 @@ class CugilTransaksiController extends Controller
 
             if ($request->filled('payment')) {
                 $sale->payment = (float) $request->payment;
-                $sale->sisa_piutang = max(0, $sale->tagihan - $sale->payment);
-                $sale->status_pelunasan = ($sale->payment >= $sale->tagihan && $sale->tagihan > 0) ? 'LUNAS' : 'BELUM LUNAS';
+                $sale->sisa_piutang = max(0, round($sale->tagihan - $sale->payment, 2));
+                $sale->status_pelunasan = ($sale->sisa_piutang <= 0) ? 'LUNAS' : ($sale->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
             }
             if ($request->filled('broker')) {
                 $sale->broker = $request->broker;
@@ -642,6 +642,87 @@ class CugilTransaksiController extends Controller
             $po->delete();
 
             return redirect()->route('cugil.po.index')->with('success', "Purchase Order [{$nomorPO}] berhasil dihapus.");
+        });
+    }
+
+    /**
+     * Otomatisasi Sinkronisasi & Perbaikan Anomali Status Pelunasan & Selisih Tagihan
+     */
+    public function syncAnomaliData()
+    {
+        return DB::transaction(function () {
+            $salesMathCount = 0;
+            $salesStatusCount = 0;
+            $rawMathCount = 0;
+            $rawStatusCount = 0;
+
+            // 1. Penjualan
+            $sales = CugilSale::all();
+            foreach ($sales as $sale) {
+                $dirty = false;
+                $expectedSisa = max(0, round($sale->tagihan - $sale->payment, 2));
+                if (abs($sale->sisa_piutang - $expectedSisa) > 0.01) {
+                    $sale->sisa_piutang = $expectedSisa;
+                    $dirty = true;
+                    $salesMathCount++;
+                }
+
+                $expectedStatus = ($sale->sisa_piutang <= 0) ? 'LUNAS' : ($sale->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
+                if ($sale->status_pelunasan !== $expectedStatus && $sale->status_pelunasan !== 'RETUR') {
+                    $sale->status_pelunasan = $expectedStatus;
+                    $dirty = true;
+                    $salesStatusCount++;
+                }
+
+                if ($dirty) {
+                    $sale->save();
+                }
+            }
+
+            // 2. Pembelian Bahan Baku
+            $rawMaterials = CugilRawMaterial::all();
+            foreach ($rawMaterials as $raw) {
+                $dirty = false;
+                $expectedSisa = max(0, round($raw->tagihan - $raw->payment, 2));
+                if (abs($raw->sisa_tagihan - $expectedSisa) > 0.01) {
+                    $raw->sisa_tagihan = $expectedSisa;
+                    $dirty = true;
+                    $rawMathCount++;
+                }
+
+                $expectedStatus = ($raw->sisa_tagihan <= 0) ? 'LUNAS' : ($raw->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
+                if ($raw->status_lunas !== $expectedStatus) {
+                    $raw->status_lunas = $expectedStatus;
+                    $dirty = true;
+                    $rawStatusCount++;
+                }
+
+                if ($dirty) {
+                    $raw->save();
+                }
+            }
+
+            // 3. Sinkronisasi Saldo Master Customer
+            $customers = CugilCustomer::all();
+            foreach ($customers as $cust) {
+                $totalSisaPiutang = CugilSale::where('kode_customer', $cust->kode_customer)->sum('sisa_piutang');
+                if (abs($cust->piutang - $totalSisaPiutang) > 0.01) {
+                    $cust->piutang = $totalSisaPiutang;
+                    $cust->save();
+                }
+            }
+
+            // 4. Sinkronisasi Saldo Master Supplier
+            $suppliers = CugilSupplier::all();
+            foreach ($suppliers as $sup) {
+                $totalSisaHutang = CugilRawMaterial::where('kode_supplier', $sup->kode_supplier)->sum('sisa_tagihan');
+                if (abs($sup->hutang - $totalSisaHutang) > 0.01) {
+                    $sup->hutang = $totalSisaHutang;
+                    $sup->save();
+                }
+            }
+
+            return back()->with('success', "Sinkronisasi berhasil! Penjualan: {$salesStatusCount} status & {$salesMathCount} sisa piutang diselaraskan. Pembelian: {$rawStatusCount} status & {$rawMathCount} sisa hutang diselaraskan.");
         });
     }
 }
