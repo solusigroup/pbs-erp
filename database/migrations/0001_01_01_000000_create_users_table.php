@@ -15,6 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('position')->nullable()->default('Staff'); // e.g. Board of Director (Finance & Tax)
+            $table->string('department')->nullable()->default('General'); // e.g. Finance & Tax
+            $table->string('role')->default('staff'); // bod, admin, finance_manager, tax_officer, staff
+            $table->string('phone')->nullable();
+            $table->string('avatar')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

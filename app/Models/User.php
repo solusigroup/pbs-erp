@@ -27,7 +27,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'position', 'department', 'role', 'phone', 'avatar', 'is_active'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -45,6 +45,40 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function roleData()
+    {
+        return $this->belongsTo(Role::class, 'role', 'slug');
+    }
+
+    public function hasRole(string|array $roles): bool
+    {
+        if (is_array($roles)) {
+            return in_array($this->role, $roles);
+        }
+        return $this->role === $roles;
+    }
+
+    public function isBOD(): bool
+    {
+        return $this->role === 'bod';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' || $this->role === 'bod';
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isBOD() || $this->role === 'admin') {
+            return true;
+        }
+
+        $roleObj = $this->roleData;
+        return $roleObj ? $roleObj->hasPermission($permission) : false;
     }
 }

@@ -161,7 +161,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration(), // Closed & Exclusive internal PT Pinastika Bhakti Semesta
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

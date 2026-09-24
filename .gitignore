@@ -1,7 +1,7 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
-/public/build
+# /public/build  ← INCLUDED: hosting tidak bisa npm build
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
@@ -10,7 +10,7 @@
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
-/vendor
+# /vendor  ← INCLUDED: hosting tidak bisa composer install
 .DS_Store
 .env
 .env.backup
@@ -42,3 +42,10 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+
+# Production deployment exclusions
+pbs_erp_production.sql
+parse_excel_data.py
+cugil_migrated_data.json
+/tests
+/scratch

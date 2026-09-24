@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Interaktif: Hibah Source Code SimpleAkunting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #FAFAF9;
+            color: #292524;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 280px;
+            max-height: 350px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 320px;
+            }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #E7E5E4;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-radius: 1rem;
+        }
+
+        .step-active {
+            border-color: #059669;
+            background-color: #ECFDF5;
+            color: #065F46;
+        }
+
+        .step-inactive {
+            border-color: #D6D3D1;
+            background-color: #FFFFFF;
+            color: #78716C;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input[type="checkbox"] {
+            accent-color: #059669;
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-[#34D399] selection:text-white pb-20">
+
+    <!-- Chosen Palette: Warm Neutrals with Emerald Accents (#FAFAF9, #292524, #FFFFFF, #059669, #ECFDF5, #E7E5E4) -->
+    <!-- Application Structure Plan: SPA ini menggunakan arsitektur "Dashboard Berorientasi Tugas". Konten laporan hibah yang bersifat prosedural diubah menjadi panduan interaktif (wizard) di sisi kiri untuk memandu pengguna melalui setiap fase administrasi secara kronologis. Sisi kanan berfungsi sebagai pelacak kemajuan visual menggunakan grafik donat Chart.js, memberikan umpan balik instan atas kesiapan pengguna. Struktur ini dipilih karena dokumen sumber merupakan SOP teknis; dengan memecahnya menjadi blok-blok interaktif, pengguna dapat fokus pada satu tahap (seperti pengunduhan dokumen atau penyiapan hosting) tanpa merasa kewalahan oleh teks panjang. Bagian footer menyajikan tata cara penting sebagai pengingat kritis sebelum proses selesai. -->
+    <!-- Visualization & Content Choices: Prosedur Tahapan -> Goal: Organize & Inform -> Method: Interactive Stepper (HTML/JS) -> Interaction: Navigasi tombol untuk memperbarui blok konten secara dinamis -> Justification: Memungkinkan akses cepat ke link dokumen tanpa scroll panjang. Pelacakan Kesiapan -> Goal: Inform Progress -> Method: Chart.js Doughnut Chart -> Interaction: Update data via checkbox event listeners -> Justification: Visualisasi kuantitatif dari tugas kualitatif (checklist) meningkatkan keterlibatan pengguna. Info Alamat -> Goal: Specific Data Display -> Method: Structured Block in Stepper -> Justification: Alamat kantor kini ditempatkan secara eksplisit pada tahap pengiriman dokumen agar tidak terlewatkan. NO SVG/Mermaid digunakan. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="bg-white border-b border-[#E7E5E4] sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">📦</span>
+                <h1 class="text-xl font-bold text-[#292524]">Portal Hibah <span
+                        class="text-[#059669]">SimpleAkunting</span></h1>
+            </div>
+            <div class="text-sm font-medium text-[#78716C] bg-[#F5F5F4] px-3 py-1 rounded-full">
+                V5.0 Program Hibah SimpleAkunting
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+
+        <header class="mb-12 max-w-3xl fade-in">
+            <h2 class="text-4xl font-extrabold tracking-tight text-[#292524] mb-4">Integrasi Source Code Sistem</h2>
+            <p class="text-lg text-[#57534E] leading-relaxed">
+                Portal ini adalah instrumen interaktif untuk memandu Anda dalam menerima hibah <i>source code</i>
+                SimpleAkunting. Ikuti alur navigasi untuk melengkapi persyaratan legal, teknis, dan administratif hingga
+                sistem siap diserahterimakan sepenuhnya.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <section class="lg:col-span-7 glass-card p-6 sm:p-8 fade-in" style="animation-delay: 0.1s;">
+                <h3 class="text-2xl font-bold mb-4">Alur Kerja Prosedural</h3>
+                <p class="text-[#57534E] mb-6 text-sm italic">
+                    Bagian ini menyajikan urutan langkah operasional yang harus Anda tempuh. Klik pada nomor tahap untuk
+                    membuka instruksi detail, mengunduh template dokumen resmi (NDA, SPK, Pakta), dan melihat instruksi
+                    pengiriman dokumen fisik ke kantor pusat.
+                </p>
+
+                <div class="flex flex-wrap gap-2 mb-8" id="step-navigation">
+                    <button onclick="changeStep(1)" id="btn-step-1"
+                        class="step-active flex-1 min-w-[120px] py-3 px-4 rounded-xl border-2 font-bold text-sm text-center transition-all duration-200">Tahap
+                        1<br><span class="font-normal text-xs">Inisiasi</span></button>
+                    <button onclick="changeStep(2)" id="btn-step-2"
+                        class="step-inactive flex-1 min-w-[120px] py-3 px-4 rounded-xl border-2 font-bold text-sm text-center transition-all duration-200">Tahap
+                        2<br><span class="font-normal text-xs">Pemberkasan</span></button>
+                    <button onclick="changeStep(3)" id="btn-step-3"
+                        class="step-inactive flex-1 min-w-[120px] py-3 px-4 rounded-xl border-2 font-bold text-sm text-center transition-all duration-200">Tahap
+                        3<br><span class="font-normal text-xs">Pengiriman</span></button>
+                    <button onclick="changeStep(4)" id="btn-step-4"
+                        class="step-inactive flex-1 min-w-[120px] py-3 px-4 rounded-xl border-2 font-bold text-sm text-center transition-all duration-200">Tahap
+                        4<br><span class="font-normal text-xs">Data Teknis</span></button>
+                </div>
+
+                <div id="step-content" class="bg-[#F5F5F4] rounded-xl p-6 border border-[#E7E5E4] min-h-[300px]">
+
+                </div>
+            </section>
+
+            <section class="lg:col-span-5 glass-card p-6 sm:p-8 fade-in" style="animation-delay: 0.2s;">
+                <h3 class="text-xl font-bold mb-4">Indikator Kesiapan Penerima</h3>
+                <p class="text-[#57534E] mb-6 text-sm italic">
+                    Dashboard ini memvisualisasikan tingkat pemenuhan syarat hibah Anda. Gunakan daftar periksa
+                    interaktif di bawah ini untuk menandai setiap tugas yang telah selesai, mulai dari penandatanganan
+                    berkas legal hingga kesiapan spesifikasi server hosting (PHP 8.2+).
+                </p>
+
+                <div class="chart-container mb-6">
+                    <canvas id="progressChart"></canvas>
+                </div>
+
+                <div class="space-y-3" id="checklist-container">
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">Kontak Admin via Umpan Balik</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">NDA Diunduh & Ditandatangani</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">SPK Diunduh & Ditandatangani</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">Pakta Integritas Ditandatangani</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">Dokumen Fisik Dikirim ke Kantor</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">Server Hosting Siap (PHP 8.2+)</span>
+                    </label>
+                    <label
+                        class="flex items-start space-x-3 p-3 rounded-lg hover:bg-[#F5F5F4] transition-colors cursor-pointer border border-transparent hover:border-[#E7E5E4]">
+                        <input type="checkbox" onchange="updateProgress()" class="mt-0.5">
+                        <span class="text-sm font-medium text-[#292524]">Data Hosting Dikirim ke Form</span>
+                    </label>
+                </div>
+            </section>
+        </div>
+
+        <section class="mt-12 glass-card p-8 fade-in" style="animation-delay: 0.3s;">
+            <div class="border-l-4 border-[#059669] pl-4 mb-8">
+                <h3 class="text-2xl font-bold text-[#292524]">Pilar Keberhasilan Implementasi</h3>
+                <p class="text-[#57534E] mt-1 italic">
+                    Tiga aspek fundamental ini memastikan hibah sistem berjalan sesuai standar kepatuhan dan
+                    fungsionalitas teknis. Kelalaian pada salah satu pilar dapat menghambat proses serah terima kode
+                    sumber.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-[#E7E5E4] hover:shadow-md transition-shadow">
+                    <div class="text-3xl mb-4">📝</div>
+                    <h4 class="font-bold text-lg mb-2">1. Validitas Legalitas</h4>
+                    <p class="text-sm text-[#57534E] leading-relaxed">
+                        Seluruh isian pada NDA, SPK, dan Pakta Integritas wajib menggunakan identitas resmi sesuai KTP
+                        atau profil institusi. Tanda tangan basah sangat direkomendasikan.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-[#E7E5E4] hover:shadow-md transition-shadow">
+                    <div class="text-3xl mb-4">⚙️</div>
+                    <h4 class="font-bold text-lg mb-2">2. Standar Infrastruktur</h4>
+                    <p class="text-sm text-[#57534E] leading-relaxed">
+                        Aplikasi SimpleAkunting berjalan optimal pada ekosistem modern. Server wajib menggunakan <strong
+                            class="text-[#059669]">PHP 8.2+</strong> dengan database <strong
+                            class="text-[#059669]">MariaDB/MySQL</strong> versi terbaru.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-[#E7E5E4] hover:shadow-md transition-shadow">
+                    <div class="text-3xl mb-4">💬</div>
+                    <h4 class="font-bold text-lg mb-2">3. Protokol Komunikasi</h4>
+                    <p class="text-sm text-[#57534E] leading-relaxed">
+                        Lakukan konfirmasi kepada tim administrasi segera setelah dokumen fisik dikirimkan melalui pos
+                        atau kurir. Simpan nomor resi untuk pelacakan.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const stepData = {
+            1: {
+                icon: '👋',
+                title: 'Inisiasi & Kontak Admin',
+                description: 'Langkah awal dimulai dengan menjalin komunikasi resmi dengan tim administrasi untuk verifikasi minat dan tujuan penggunaan hibah.',
+                actions: [
+                    { text: 'Buka Formulir Umpan Balik', url: 'https://v3.simpleakunting.biz.id/umpan_balik.html', style: 'bg-[#059669] text-white hover:bg-[#047857]' }
+                ]
+            },
+            2: {
+                icon: '📄',
+                title: 'Pemberkasan Dokumen Legal',
+                description: 'Calon penerima diwajibkan mengunduh dan melengkapi dokumen hukum berikut sebagai prasyarat pemakaian kode sumber aplikasi.',
+                actions: [
+                    { text: 'Unduh NDA', url: 'https://s.id/XYLBt', style: 'bg-white text-[#292524] border border-[#D6D3D1] hover:bg-[#F5F5F4]' },
+                    { text: 'Unduh SPK', url: 'https://s.id/spk_simpleakunting', style: 'bg-white text-[#292524] border border-[#D6D3D1] hover:bg-[#F5F5F4]' },
+                    { text: 'Unduh Pakta Integritas', url: 'https://s.id/paktasimpleakunting', style: 'bg-white text-[#292524] border border-[#D6D3D1] hover:bg-[#F5F5F4]' }
+                ]
+            },
+            3: {
+                icon: '✉️',
+                title: 'Pengiriman Dokumen Fisik',
+                description: 'Seluruh dokumen yang telah ditandatangani di atas meterai harus dikirimkan secara fisik melalui jasa pos atau ekspedisi ke alamat kantor pusat berikut:',
+                address: '<div class="mt-4 p-4 bg-white border border-[#E7E5E4] rounded-lg shadow-inner"><p class="font-bold text-[#292524]">Alamat Kantor:</p><p class="text-[#57534E]">Jl. Suromulang Barat VI/20,<br>Mojokerto, Jawa Timur.</p></div>',
+                actions: [
+                    { text: 'Konfirmasi Pengiriman', url: 'https://v3.simpleakunting.biz.id/umpan_balik.html', style: 'bg-[#292524] text-white hover:bg-[#44403C]' }
+                ],
+                note: 'Simpan nomor resi pengiriman sebagai bukti untuk verifikasi oleh tim administrasi.'
+            },
+            4: {
+                icon: '💻',
+                title: 'Penyerahan Data Teknis (Hosting)',
+                description: 'Lengkapi formulir kesanggupan untuk menyerahkan data kredensial hosting atau spesifikasi server yang akan digunakan sebagai wadah aplikasi.',
+                actions: [
+                    { text: 'Kirim Data Hosting', url: 'https://simpleakunting.biz.id/KesanggupanPenerimaHibah.html', style: 'bg-[#059669] text-white hover:bg-[#047857]' }
+                ],
+                note: 'Akses source code akan diberikan segera setelah data teknis diverifikasi oleh tim pengembang.'
+            }
+        };
+
+        function renderStepContent(step) {
+            const data = stepData[step];
+            let actionsHtml = data.actions.map(action =>
+                `<a href="${action.url}" target="_blank" class="inline-block px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors ${action.style}">${action.text}</a>`
+            ).join('');
+
+            let addressHtml = data.address ? data.address : '';
+            let noteHtml = data.note ? `<div class="mt-6 p-4 bg-[#E7E5E4]/50 rounded-lg text-sm text-[#57534E] border-l-4 border-[#A8A29E]"><span class="font-bold">Informasi:</span> ${data.note}</div>` : '';
+
+            return `
+                <div class="fade-in">
+                    <div class="text-4xl mb-4">${data.icon}</div>
+                    <h4 class="text-2xl font-bold text-[#292524] mb-3">${data.title}</h4>
+                    <p class="text-[#57534E] mb-2 leading-relaxed">${data.description}</p>
+                    ${addressHtml}
+                    <div class="flex flex-wrap gap-3 mt-8">
+                        ${actionsHtml}
+                    </div>
+                    ${noteHtml}
+                </div>
+            `;
+        }
+
+        function changeStep(stepNumber) {
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`btn-step-${i}`);
+                if (i === stepNumber) {
+                    btn.classList.remove('step-inactive');
+                    btn.classList.add('step-active');
+                } else {
+                    btn.classList.remove('step-active');
+                    btn.classList.add('step-inactive');
+                }
+            }
+
+            const contentContainer = document.getElementById('step-content');
+            contentContainer.innerHTML = renderStepContent(stepNumber);
+        }
+
+        let progressChartInstance = null;
+
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Selesai', 'Pending'],
+                    datasets: [{
+                        data: [0, 7],
+                        backgroundColor: ['#059669', '#E7E5E4'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return ' ' + context.label + ': ' + context.parsed + ' Tugas';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'textCenter',
+                    beforeDraw: function (chart) {
+                        var width = chart.width,
+                            height = chart.height,
+                            ctx = chart.ctx;
+
+                        ctx.restore();
+                        var fontSize = (height / 100).toFixed(2);
+                        ctx.font = "bold " + fontSize + "em sans-serif";
+                        ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#292524";
+
+                        var total = chart.data.datasets[0].data[0] + chart.data.datasets[0].data[1];
+                        var percentage = Math.round((chart.data.datasets[0].data[0] / total) * 100) + "%";
+
+                        var textX = Math.round((width - ctx.measureText(percentage).width) / 2),
+                            textY = height / 2;
+
+                        ctx.fillText(percentage, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
+            let checkedCount = 0;
+
+            checkboxes.forEach(box => {
+                if (box.checked) checkedCount++;
+            });
+
+            const totalCount = checkboxes.length;
+            const uncheckedCount = totalCount - checkedCount;
+
+            progressChartInstance.data.datasets[0].data = [checkedCount, uncheckedCount];
+            progressChartInstance.update();
+        }
+
+        window.onload = function () {
+            changeStep(1);
+            initChart();
+        };
+    </script>
+</body>
+
+</html>
