@@ -9,10 +9,10 @@
         </div>
         @if(auth()->user()->canMutate())
         <div class="flex items-center gap-2">
-            <form action="{{ route('cugil.lunaskanSemuaPiutang') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyesuaikan seluruh data penjualan menjadi LUNAS (Sisa Piutang = Rp 0)?')">
+            <form action="{{ route('cugil.lunaskanSemuaPiutang') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyesuaikan seluruh data penjualan selain Mustofa (termasuk PT Hamparan/Afuk) menjadi LUNAS (Sisa Piutang = Rp 0)?')">
                 @csrf
-                <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20" title="Sesuaikan faktual: Nolkan semua sisa piutang penjualan dan jadikan LUNAS">
-                    <i class="fas fa-check-double text-xs"></i> Nolkan Sisa Piutang
+                <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20" title="Sesuaikan faktual: Nolkan sisa piutang penjualan (PT Hamparan / Afuk & customer lainnya jadi LUNAS, hanya Mustofa tersisa)">
+                    <i class="fas fa-check-double text-xs"></i> Nolkan Sisa Piutang (Kecuali Mustofa)
                 </button>
             </form>
             <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Kastamer</button>
