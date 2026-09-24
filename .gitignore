@@ -46,6 +46,6 @@ yarn-error.log
 # Production deployment exclusions
 pbs_erp_production.sql
 parse_excel_data.py
-cugil_migrated_data.json
+# cugil_migrated_data.json (included for database seeder)
 /tests
 /scratch
