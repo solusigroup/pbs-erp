@@ -82,9 +82,23 @@ class RoleSeeder extends Seeder
                 'is_system' => true,
             ],
             [
+                'slug' => 'komisaris',
+                'name' => 'Dewan Komisaris (Read-Only)',
+                'description' => 'Dewan Pengawas & Pemegang Saham: Pemantauan Kinerja Finansial, Audit Operasional & KPI Perusahaan Tanpa Wewenang Eksekusi Transaksi',
+                'permissions' => [
+                    'dashboard.view',
+                    'cugil.view',
+                    'akuntansi.view',
+                    'akuntansi.laporan',
+                    'laporan.view',
+                    'analisis.view',
+                ],
+                'is_system' => true,
+            ],
+            [
                 'slug' => 'auditor',
-                'name' => 'Auditor / Dewan Pengawas (Read-Only)',
-                'description' => 'Hak Akses Khusus Pemeriksaan & Kepatuhan: Melihat Seluruh Data Transaksi, Timbangan, Jurnal, Faktur Pajak & Laporan Tanpa Izin Ubah/Hapus',
+                'name' => 'Auditor Independen / Kepatuhan',
+                'description' => 'Pemeriksaan & Kepatuhan: Akses Penuh Dokumen Transaksi, Foto Timbangan, Jurnal, Faktur Pajak & Rekapitulasi untuk Keperluan Audit',
                 'permissions' => [
                     'dashboard.view',
                     'cugil.view',

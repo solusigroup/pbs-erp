@@ -9,6 +9,7 @@
             <h2 class="text-xl font-black text-white">Pengajuan Dana & Approval Anggaran</h2>
             <p class="text-xs text-slate-400 mt-0.5">Pengendalian arus keluar kas & verifikasi anggaran operasional PT Pinastika Bhakti Semesta</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button 
             type="button" 
             onclick="document.getElementById('modalTambahPengajuan').classList.toggle('hidden')"
@@ -17,6 +18,11 @@
             <i class="fas fa-plus"></i>
             <span>Buat Pengajuan Dana Baru</span>
         </button>
+        @else
+        <span class="px-3 py-1.5 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 self-start">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
 
     <!-- 3 Summary Badges -->
@@ -154,6 +160,7 @@
                             </td>
                             <td class="py-3 px-4 text-center">
                                 @if($p->status === 'Menunggu Approval')
+                                    @if(auth()->user()->canMutate())
                                     <div class="flex items-center justify-center gap-1.5">
                                         <!-- Fast Approve Form -->
                                         <form method="POST" action="{{ route('anggaran.approve', $p->id) }}">
@@ -174,6 +181,9 @@
                                             </button>
                                         </form>
                                     </div>
+                                    @else
+                                    <span class="text-[10px] text-amber-400/80 font-medium italic">Menunggu Review BOD</span>
+                                    @endif
                                 @else
                                     <span class="text-[10px] text-slate-500 italic">Selesai direview</span>
                                 @endif

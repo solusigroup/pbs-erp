@@ -11,9 +11,15 @@
             <a href="{{ route('cugil.raw.index') }}" class="bg-amber-600/30 hover:bg-amber-600 border border-amber-500 text-amber-300 hover:text-white px-3.5 py-2 rounded-lg font-medium text-xs transition">
                 <i class="fas fa-boxes-stacked mr-1.5"></i>Ke Penerimaan Bahan (CUGIL RAW)
             </a>
+            @if(auth()->user()->canMutate())
             <button onclick="document.getElementById('modalTambahPO').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-blue-600/30 transition text-sm">
                 <i class="fas fa-plus mr-1.5"></i>Buat PO Baru
             </button>
+            @else
+            <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                <i class="fas fa-eye text-xs"></i> Mode Pantau
+            </span>
+            @endif
         </div>
     </div>
 

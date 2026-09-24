@@ -26,6 +26,7 @@
                 <i class="fas fa-money-bill-transfer text-amber-400"></i>
                 <span>Jurnal Kas &amp; Bank</span>
             </a>
+            @if(auth()->user()->canMutate())
             <button 
                 type="button" 
                 onclick="document.getElementById('modalTambahJurnal').classList.toggle('hidden')"
@@ -34,6 +35,11 @@
                 <i class="fas fa-plus"></i>
                 <span>+ Input Jurnal Memorial</span>
             </button>
+            @else
+            <span class="px-3.5 py-2 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+            </span>
+            @endif
         </div>
     </div>
 

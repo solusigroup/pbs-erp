@@ -8,9 +8,15 @@
             <p class="text-gray-400 text-sm mt-1">Penerimaan &amp; timbang bahan masuk dari Purchase Order (PO) yang sudah terkirim/tiba di PT PBS</p>
         </div>
         <div class="flex items-center gap-2.5">
+            @if(auth()->user()->canMutate())
             <button onclick="bukaModalRaw(null)" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-amber-600/30 transition text-sm">
                 <i class="fas fa-plus mr-1.5"></i>Input Bahan Masuk (Tarik PO / Manual)
             </button>
+            @else
+            <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+            </span>
+            @endif
         </div>
     </div>
 
@@ -187,9 +193,11 @@
                             <a href="{{ route('cugil.raw.tanda-terima', $raw->id) }}" target="_blank" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Tanda Terima & Tiket Timbang">
                                 <i class="fas fa-print mr-1"></i>Bukti
                             </a>
+                            @if(auth()->user()->canMutate())
                             <button onclick="document.getElementById('modalBayarRaw{{ $raw->id }}').classList.remove('hidden')" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-xs transition" title="Update Pelunasan">
                                 <i class="fas fa-money-bill-wave mr-1"></i>Bayar
                             </button>
+                            @endif
                         </div>
                     </td>
                 </tr>

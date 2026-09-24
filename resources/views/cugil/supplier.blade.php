@@ -7,7 +7,13 @@
             <h1 class="text-2xl font-bold text-white"><i class="fas fa-truck mr-2 text-blue-400"></i>Daftar Supplier CUGIL</h1>
             <p class="text-gray-400 text-sm mt-1">Master data pemasok bahan baku cuci giling</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Supplier</button>
+        @else
+        <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
 
     @if(session('success'))<div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg">{{ session('success') }}</div>@endif
@@ -43,7 +49,9 @@
                     <th class="px-4 py-3">Telepon</th>
                     <th class="px-4 py-3">Item Barang</th>
                     <th class="px-4 py-3 text-right">Hutang</th>
+                    @if(auth()->user()->canMutate())
                     <th class="px-4 py-3 text-center">Aksi</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -56,10 +64,12 @@
                     <td class="px-4 py-3 text-gray-300">{{ $s->telepon ?? '-' }}</td>
                     <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $s->item_barang ?? '-' }}</td>
                     <td class="px-4 py-3 text-right {{ $s->hutang > 0 ? 'text-red-400' : 'text-gray-400' }}">Rp {{ number_format($s->hutang, 0, ',', '.') }}</td>
+                    @if(auth()->user()->canMutate())
                     <td class="px-4 py-3 text-center">
                         <button onclick="document.getElementById('editModal{{ $s->id }}').classList.remove('hidden')" class="text-yellow-400 hover:text-yellow-300 mr-2"><i class="fas fa-edit"></i></button>
                         <form action="{{ route('cugil.supplier.destroy', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus supplier {{ $s->nama_supplier }}?')">@csrf @method('DELETE')<button type="submit" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></form>
                     </td>
+                    @endif
                 </tr>
                 {{-- Edit Modal --}}
                 <div id="editModal{{ $s->id }}" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">

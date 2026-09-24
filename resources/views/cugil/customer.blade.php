@@ -7,7 +7,13 @@
             <h1 class="text-2xl font-bold text-white"><i class="fas fa-users mr-2 text-green-400"></i>Daftar Kastamer CUGIL</h1>
             <p class="text-gray-400 text-sm mt-1">Master data pembeli hasil cuci giling</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Kastamer</button>
+        @else
+        <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
 
     @if(session('success'))<div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg">{{ session('success') }}</div>@endif
@@ -26,7 +32,18 @@
     <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto">
         <table class="w-full text-sm text-left">
             <thead class="text-xs text-gray-400 uppercase bg-gray-900/50">
-                <tr><th class="px-4 py-3">#</th><th class="px-4 py-3">Kode</th><th class="px-4 py-3">Nama Kastamer</th><th class="px-4 py-3">Kota</th><th class="px-4 py-3">Telepon</th><th class="px-4 py-3">Item Barang</th><th class="px-4 py-3 text-right">Piutang</th><th class="px-4 py-3 text-center">Aksi</th></tr>
+                <tr>
+                    <th class="px-4 py-3">#</th>
+                    <th class="px-4 py-3">Kode</th>
+                    <th class="px-4 py-3">Nama Kastamer</th>
+                    <th class="px-4 py-3">Kota</th>
+                    <th class="px-4 py-3">Telepon</th>
+                    <th class="px-4 py-3">Item Barang</th>
+                    <th class="px-4 py-3 text-right">Piutang</th>
+                    @if(auth()->user()->canMutate())
+                    <th class="px-4 py-3 text-center">Aksi</th>
+                    @endif
+                </tr>
             </thead>
             <tbody>
                 @forelse($customers as $i => $c)
@@ -38,10 +55,12 @@
                     <td class="px-4 py-3 text-gray-300">{{ $c->telepon ?? '-' }}</td>
                     <td class="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{{ $c->item_barang ?? '-' }}</td>
                     <td class="px-4 py-3 text-right {{ $c->piutang > 0 ? 'text-yellow-400' : 'text-gray-400' }}">Rp {{ number_format($c->piutang, 0, ',', '.') }}</td>
+                    @if(auth()->user()->canMutate())
                     <td class="px-4 py-3 text-center">
                         <button onclick="document.getElementById('editModal{{ $c->id }}').classList.remove('hidden')" class="text-yellow-400 hover:text-yellow-300 mr-2"><i class="fas fa-edit"></i></button>
                         <form action="{{ route('cugil.customer.destroy', $c->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus kastamer {{ $c->nama_customer }}?')">@csrf @method('DELETE')<button type="submit" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></form>
                     </td>
+                    @endif
                 </tr>
                 <div id="editModal{{ $c->id }}" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700">

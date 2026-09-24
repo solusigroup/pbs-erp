@@ -7,7 +7,13 @@
             <h1 class="text-2xl font-bold text-white"><i class="fas fa-boxes mr-2 text-purple-400"></i>Daftar Barang CUGIL</h1>
             <p class="text-gray-400 text-sm mt-1">Katalog bahan baku &amp; hasil cuci giling ({{ $totalBarang }} item)</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button onclick="document.getElementById('modalTambah').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-plus mr-1"></i>Tambah Barang</button>
+        @else
+        <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
     @if(session('success'))<div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg">{{ session('success') }}</div>@endif
 
@@ -22,7 +28,22 @@
     <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto">
         <table class="w-full text-sm text-left">
             <thead class="text-xs text-gray-400 uppercase bg-gray-900/50">
-                <tr><th class="px-3 py-3">#</th><th class="px-3 py-3">Kode</th><th class="px-3 py-3">Nama Barang</th><th class="px-3 py-3">Kategori</th><th class="px-3 py-3">Satuan</th><th class="px-3 py-3 text-right">Stok Awal</th><th class="px-3 py-3 text-right">Masuk</th><th class="px-3 py-3 text-right">Keluar</th><th class="px-3 py-3 text-right">Stok Akhir</th><th class="px-3 py-3 text-right">Hrg Beli</th><th class="px-3 py-3 text-right">Hrg Jual</th><th class="px-3 py-3 text-center">Aksi</th></tr>
+                <tr>
+                    <th class="px-3 py-3">#</th>
+                    <th class="px-3 py-3">Kode</th>
+                    <th class="px-3 py-3">Nama Barang</th>
+                    <th class="px-3 py-3">Kategori</th>
+                    <th class="px-3 py-3">Satuan</th>
+                    <th class="px-3 py-3 text-right">Stok Awal</th>
+                    <th class="px-3 py-3 text-right">Masuk</th>
+                    <th class="px-3 py-3 text-right">Keluar</th>
+                    <th class="px-3 py-3 text-right">Stok Akhir</th>
+                    <th class="px-3 py-3 text-right">Hrg Beli</th>
+                    <th class="px-3 py-3 text-right">Hrg Jual</th>
+                    @if(auth()->user()->canMutate())
+                    <th class="px-3 py-3 text-center">Aksi</th>
+                    @endif
+                </tr>
             </thead>
             <tbody>
                 @forelse($barangs as $i => $b)
@@ -38,10 +59,12 @@
                     <td class="px-3 py-2 text-right font-bold {{ $b->stok_akhir < 0 ? 'text-red-400' : 'text-white' }}">{{ number_format($b->stok_akhir, 1) }}</td>
                     <td class="px-3 py-2 text-right text-gray-300">{{ $b->harga_beli > 0 ? number_format($b->harga_beli, 0, ',', '.') : '-' }}</td>
                     <td class="px-3 py-2 text-right text-gray-300">{{ $b->harga_jual > 0 ? number_format($b->harga_jual, 0, ',', '.') : '-' }}</td>
+                    @if(auth()->user()->canMutate())
                     <td class="px-3 py-2 text-center">
                         <button onclick="document.getElementById('editBarang{{ $b->id }}').classList.remove('hidden')" class="text-yellow-400 hover:text-yellow-300 mr-1"><i class="fas fa-edit"></i></button>
                         <form action="{{ route('cugil.barang.destroy', $b->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus barang {{ $b->nama_barang }}?')">@csrf @method('DELETE')<button type="submit" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></form>
                     </td>
+                    @endif
                 </tr>
                 <div id="editBarang{{ $b->id }}" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700">

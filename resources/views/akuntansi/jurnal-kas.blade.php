@@ -23,6 +23,7 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            @if(auth()->user()->canMutate())
             <button type="button" onclick="openModalImport()" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/20 transition flex items-center gap-2">
                 <i class="fas fa-file-excel"></i>
                 <span>Impor Excel / CSV</span>
@@ -39,6 +40,11 @@
                 <i class="fas fa-repeat"></i>
                 <span>Transfer Kas-Bank</span>
             </button>
+            @else
+            <span class="px-3.5 py-2 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+            </span>
+            @endif
         </div>
     </div>
 

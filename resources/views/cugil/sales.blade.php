@@ -7,9 +7,15 @@
             <h1 class="text-2xl font-bold text-white"><i class="fas fa-hand-holding-dollar mr-2 text-emerald-400"></i>Penjualan Hasil Cuci Giling (CUGIL)</h1>
             <p class="text-gray-400 text-sm mt-1">Pencatatan faktur, pengiriman, &amp; arsip foto slip timbangan kastamer (dilengkapi kompresi otomatis hemat server)</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button onclick="document.getElementById('modalTambahSale').classList.remove('hidden')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg hover:shadow-emerald-600/30 transition">
             <i class="fas fa-plus mr-1.5"></i>Input Faktur Penjualan (Multi-Item)
         </button>
+        @else
+        <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
 
     @if(session('success'))
@@ -188,9 +194,11 @@
                             <a href="{{ route('cugil.sales.faktur-pajak', $s->id) }}" target="_blank" class="px-2 py-1 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Faktur Pajak (PPN)">
                                 <i class="fas fa-stamp mr-1"></i>Pajak
                             </a>
+                            @if(auth()->user()->canMutate())
                             <button onclick="document.getElementById('modalBayarSale{{ $s->id }}').classList.remove('hidden')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition" title="Update Pelunasan & Data">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            @endif
                         </div>
                     </td>
                 </tr>

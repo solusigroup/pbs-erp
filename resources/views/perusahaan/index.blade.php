@@ -156,10 +156,16 @@
                 </div>
 
                 <div class="flex items-center justify-end pt-3">
+                    @if(auth()->user()->canMutate())
                     <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
                         <i class="fas fa-save"></i>
                         <span>Simpan Perubahan Identitas Korporasi</span>
                     </button>
+                    @else
+                    <span class="px-4 py-2 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+                    </span>
+                    @endif
                 </div>
             </form>
         </div>
@@ -252,10 +258,16 @@
                 </h3>
                 <p class="text-xs text-slate-400">Daftar pengurus korporasi yang berwenang memberikan otorisasi komersial, perpajakan, dan operasional</p>
             </div>
+            @if(auth()->user()->canMutate())
             <button onclick="openModal('modalAddDirector')" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 transition flex items-center gap-2 shrink-0">
                 <i class="fas fa-user-plus"></i>
                 <span>+ Tambah Anggota Direksi</span>
             </button>
+            @else
+            <span class="px-4 py-2 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 shrink-0">
+                <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+            </span>
+            @endif
         </div>
 
         <!-- Directors Grid Cards -->
@@ -324,6 +336,7 @@
                             {{ $d->is_active ? 'Otorisasi Aktif' : 'Non-Aktif' }}
                         </span>
 
+                        @if(auth()->user()->canMutate())
                         <div class="flex items-center gap-1.5">
                             <button onclick="editDirector({{ json_encode($d) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold border border-slate-700 transition flex items-center gap-1">
                                 <i class="fas fa-pen-to-square"></i>
@@ -337,6 +350,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
                 </div>
             @empty
@@ -492,10 +506,16 @@
                 </div>
 
                 <div class="flex items-center justify-end pt-4 border-t border-slate-800">
+                    @if(auth()->user()->canMutate())
                     <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
                         <i class="fas fa-check-double"></i>
                         <span>Simpan Otorisasi {{ $docTitles[$currentDoc] ?? 'Dokumen' }}</span>
                     </button>
+                    @else
+                    <span class="px-4 py-2 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+                    </span>
+                    @endif
                 </div>
             </form>
         </div>

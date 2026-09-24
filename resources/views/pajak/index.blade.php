@@ -9,6 +9,7 @@
             <h2 class="text-xl font-black text-white">Manajemen Perpajakan Korporasi</h2>
             <p class="text-xs text-slate-400 mt-0.5">Pengawasan kepatuhan fiskal PPN & PPh PT Pinastika Bhakti Semesta &bull; Supervisi: Kurniawan, S.E. (BOD)</p>
         </div>
+        @if(auth()->user()->canMutate())
         <button 
             type="button" 
             onclick="document.getElementById('modalTambahPajak').classList.toggle('hidden')"
@@ -17,6 +18,11 @@
             <i class="fas fa-plus"></i>
             <span>Catat Dokumen Pajak Baru</span>
         </button>
+        @else
+        <span class="px-3 py-1.5 rounded-xl bg-slate-800 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 self-start">
+            <i class="fas fa-eye text-xs"></i> Mode Pantau (Read-Only)
+        </span>
+        @endif
     </div>
 
     <!-- 4 Tax Summary Cards -->
@@ -198,6 +204,7 @@
                                 @endif
                             </td>
                             <td class="py-3 px-4 text-center">
+                                @if(auth()->user()->canMutate())
                                 <button 
                                     type="button" 
                                     onclick="openUpdateModal('{{ $t->id }}', '{{ $t->kode_referensi }}', '{{ $t->status_bayar }}', '{{ $t->ntpn }}', '{{ $t->status_lapor }}', '{{ $t->bpe_spt }}')"
@@ -205,6 +212,9 @@
                                 >
                                     Update
                                 </button>
+                                @else
+                                <span class="text-[10px] text-slate-500 italic">Arsip Fiskal</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
