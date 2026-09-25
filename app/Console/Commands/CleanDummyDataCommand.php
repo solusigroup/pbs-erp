@@ -74,7 +74,11 @@ class CleanDummyDataCommand extends Command
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        $this->info('Pembersihan data simulasi selesai dan saldo COA berhasil di-recalculating!');
+        // 4. Jalankan pembuatan Jurnal Retro otomatis untuk data CUGIL 2023-2026
+        $this->info('Membuat draf jurnal retroaktif dari transaksi CUGIL (2023-2026)...');
+        \Illuminate\Support\Facades\Artisan::call('jurnal:sync-retro');
+
+        $this->info('Pembersihan data simulasi selesai, draf jurnal retroaktif dibuat, dan saldo COA berhasil di-recalculate!');
         return 0;
     }
 }
