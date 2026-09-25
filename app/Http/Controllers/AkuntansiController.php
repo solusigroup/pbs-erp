@@ -614,12 +614,11 @@ class AkuntansiController extends Controller
 
         $akun = Akun::where('kode_akun', $selectedKode)->firstOrFail();
 
-        // 1. Saldo Awal sebelum periode
-        $preMutations = JurnalDetail::where('kode_akun', $selectedKode)
-            ->whereHas('jurnal', function ($q) use ($tanggalDari) {
-                $q->where('tanggal', '<', $tanggalDari);
-            })
-            ->selectRaw('COALESCE(SUM(debit), 0) as total_debit, COALESCE(SUM(kredit), 0) as total_kredit')
+        // 1. Saldo Awal sebelum periode (Optimized: Direct Join)
+        $preMutations = JurnalDetail::join('jurnal_umum', 'jurnal_detail.id_jurnal', '=', 'jurnal_umum.id_jurnal')
+            ->where('jurnal_detail.kode_akun', $selectedKode)
+            ->where('jurnal_umum.tanggal', '<', $tanggalDari)
+            ->selectRaw('COALESCE(SUM(jurnal_detail.debit), 0) as total_debit, COALESCE(SUM(jurnal_detail.kredit), 0) as total_kredit')
             ->first();
 
         $saldoAwalPeriode = $akun->saldo_awal;
@@ -629,13 +628,11 @@ class AkuntansiController extends Controller
             $saldoAwalPeriode += (($preMutations->total_kredit ?? 0) - ($preMutations->total_debit ?? 0));
         }
 
-        // 2. Mutasi transaksi dalam periode
-        $mutasiDetails = JurnalDetail::with(['jurnal.details.akun'])
-            ->where('kode_akun', $selectedKode)
-            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
-                $q->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
-            })
+        // 2. Mutasi transaksi dalam periode (Optimized: Direct Join & Selective Columns, Low Memory)
+        $mutasiDetails = JurnalDetail::with(['jurnal:id_jurnal,no_transaksi,tanggal,tipe_jurnal,deskripsi,sumber_referensi'])
             ->join('jurnal_umum', 'jurnal_detail.id_jurnal', '=', 'jurnal_umum.id_jurnal')
+            ->where('jurnal_detail.kode_akun', $selectedKode)
+            ->whereBetween('jurnal_umum.tanggal', [$tanggalDari, $tanggalSampai])
             ->orderBy('jurnal_umum.tanggal', 'asc')
             ->orderBy('jurnal_detail.id_detail', 'asc')
             ->select('jurnal_detail.*')
@@ -659,6 +656,7 @@ class AkuntansiController extends Controller
         }
 
         $saldoAkhirPeriode = $currentBalance;
+        $perusahaan = Perusahaan::first();
 
         return view('akuntansi.buku-besar', compact(
             'allAccounts',
@@ -670,7 +668,77 @@ class AkuntansiController extends Controller
             'mutasiDetails',
             'totalDebit',
             'totalKredit',
-            'saldoAkhirPeriode'
+            'saldoAkhirPeriode',
+            'perusahaan'
+        ));
+    }
+
+    /**
+     * Cetak Buku Besar (General Ledger Print View & PDF - Ultra Fast & Low Memory)
+     */
+    public function cetakBukuBesar(Request $request)
+    {
+        $selectedKode = $request->query('kode_akun', '1-1100');
+        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        $akun = Akun::where('kode_akun', $selectedKode)->firstOrFail();
+
+        // 1. Saldo Awal sebelum periode
+        $preMutations = JurnalDetail::join('jurnal_umum', 'jurnal_detail.id_jurnal', '=', 'jurnal_umum.id_jurnal')
+            ->where('jurnal_detail.kode_akun', $selectedKode)
+            ->where('jurnal_umum.tanggal', '<', $tanggalDari)
+            ->selectRaw('COALESCE(SUM(jurnal_detail.debit), 0) as total_debit, COALESCE(SUM(jurnal_detail.kredit), 0) as total_kredit')
+            ->first();
+
+        $saldoAwalPeriode = $akun->saldo_awal;
+        if ($akun->saldo_normal === 'Debit') {
+            $saldoAwalPeriode += (($preMutations->total_debit ?? 0) - ($preMutations->total_kredit ?? 0));
+        } else {
+            $saldoAwalPeriode += (($preMutations->total_kredit ?? 0) - ($preMutations->total_debit ?? 0));
+        }
+
+        // 2. Mutasi transaksi dalam periode
+        $mutasiDetails = JurnalDetail::with(['jurnal:id_jurnal,no_transaksi,tanggal,tipe_jurnal,deskripsi,sumber_referensi'])
+            ->join('jurnal_umum', 'jurnal_detail.id_jurnal', '=', 'jurnal_umum.id_jurnal')
+            ->where('jurnal_detail.kode_akun', $selectedKode)
+            ->whereBetween('jurnal_umum.tanggal', [$tanggalDari, $tanggalSampai])
+            ->orderBy('jurnal_umum.tanggal', 'asc')
+            ->orderBy('jurnal_detail.id_detail', 'asc')
+            ->select('jurnal_detail.*')
+            ->get();
+
+        // 3. Hitung running balance
+        $currentBalance = $saldoAwalPeriode;
+        $totalDebit = 0;
+        $totalKredit = 0;
+
+        foreach ($mutasiDetails as $item) {
+            $totalDebit += $item->debit;
+            $totalKredit += $item->kredit;
+
+            if ($akun->saldo_normal === 'Debit') {
+                $currentBalance += ($item->debit - $item->kredit);
+            } else {
+                $currentBalance += ($item->kredit - $item->debit);
+            }
+            $item->saldo_berjalan = $currentBalance;
+        }
+
+        $saldoAkhirPeriode = $currentBalance;
+        $perusahaan = Perusahaan::first();
+
+        return view('akuntansi.cetak-buku-besar', compact(
+            'selectedKode',
+            'akun',
+            'tanggalDari',
+            'tanggalSampai',
+            'saldoAwalPeriode',
+            'mutasiDetails',
+            'totalDebit',
+            'totalKredit',
+            'saldoAkhirPeriode',
+            'perusahaan'
         ));
     }
 

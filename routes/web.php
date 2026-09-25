@@ -121,6 +121,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Buku Besar (General Ledger per COA)
         Route::get('/buku-besar',          [AkuntansiController::class, 'bukuBesar'])->name('buku-besar');
+        Route::get('/buku-besar/cetak',    [AkuntansiController::class, 'cetakBukuBesar'])->name('buku-besar.cetak');
 
         // Jurnal Umum Memorial
         Route::get('/jurnal',              [AkuntansiController::class, 'jurnal'])->name('jurnal');
