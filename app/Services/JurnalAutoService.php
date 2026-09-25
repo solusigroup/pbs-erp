@@ -497,29 +497,31 @@ class JurnalAutoService
         float $totalKredit,
         array $details
     ): JurnalUmum {
-        $jurnal = JurnalUmum::create([
-            'no_transaksi' => $noTransaksi,
-            'tanggal' => $tanggal,
-            'tipe_jurnal' => $tipeJurnal,
-            'deskripsi' => $deskripsi,
-            'sumber_referensi' => $sumberReferensi,
-            'total_debit' => $totalDebit,
-            'total_kredit' => $totalKredit,
-            'created_by' => 'SYSTEM-AUTO',
-            'is_posted' => false, // DRAFT — butuh approval
-        ]);
-
-        foreach ($details as $item) {
-            JurnalDetail::create([
-                'id_jurnal' => $jurnal->id_jurnal,
-                'kode_akun' => $item['kode_akun'],
-                'keterangan_baris' => $item['keterangan_baris'],
-                'debit' => $item['debit'],
-                'kredit' => $item['kredit'],
+        return DB::transaction(function () use ($noTransaksi, $tanggal, $tipeJurnal, $deskripsi, $sumberReferensi, $totalDebit, $totalKredit, $details) {
+            $jurnal = JurnalUmum::create([
+                'no_transaksi' => $noTransaksi,
+                'tanggal' => $tanggal,
+                'tipe_jurnal' => $tipeJurnal,
+                'deskripsi' => $deskripsi,
+                'sumber_referensi' => $sumberReferensi,
+                'total_debit' => $totalDebit,
+                'total_kredit' => $totalKredit,
+                'created_by' => 'SYSTEM-AUTO',
+                'is_posted' => false, // DRAFT — butuh approval
             ]);
-        }
 
-        return $jurnal->load('details.akun');
+            foreach ($details as $item) {
+                JurnalDetail::create([
+                    'id_jurnal' => $jurnal->id_jurnal,
+                    'kode_akun' => $item['kode_akun'],
+                    'keterangan_baris' => $item['keterangan_baris'],
+                    'debit' => $item['debit'],
+                    'kredit' => $item['kredit'],
+                ]);
+            }
+
+            return $jurnal->load('details.akun');
+        });
     }
 
     /**

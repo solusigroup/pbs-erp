@@ -61,9 +61,16 @@ class CleanDummyDataCommand extends Command
         PengajuanDana::truncate();
         TransaksiPajak::truncate();
 
-        // 2. Hapus jurnal simulasi awal jika ada
+        // 2. Hapus jurnal simulasi awal & jurnal anomali (tanpa detail baris / COA invalid)
+        $validAkunCodes = Akun::pluck('kode_akun')->toArray();
         $dummyJurnals = JurnalUmum::where('no_transaksi', 'JU-2026-0001')
             ->orWhere('deskripsi', 'like', '%PT Mitra Sejahtera%')
+            ->orWhereDoesntHave('details')
+            ->orWhereHas('details', function ($q) use ($validAkunCodes) {
+                $q->whereNull('kode_akun')
+                  ->orWhere('kode_akun', '')
+                  ->orWhereNotIn('kode_akun', $validAkunCodes);
+            })
             ->get();
 
         foreach ($dummyJurnals as $j) {
