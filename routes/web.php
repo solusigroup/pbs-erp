@@ -118,6 +118,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Buku Kas & Bank (Mutasi & Running Balance)
         Route::get('/buku-kas',            [AkuntansiController::class, 'bukuKas'])->name('buku-kas');
+        Route::get('/buku-kas/cetak',      [AkuntansiController::class, 'cetakBukuKas'])->name('buku-kas.cetak');
         
         // Buku Besar (General Ledger per COA)
         Route::get('/buku-besar',          [AkuntansiController::class, 'bukuBesar'])->name('buku-besar');
