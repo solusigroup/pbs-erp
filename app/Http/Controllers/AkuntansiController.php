@@ -185,6 +185,12 @@ class AkuntansiController extends Controller
             ->with('success', 'Seluruh Saldo Awal akun COA berhasil di-NOL-kan (0). Saldo berjalan kini murni bersumber dari mutasi transaksi.');
     }
 
+    public function cleanDummyData()
+    {
+        \Illuminate\Support\Facades\Artisan::call('db:clean-dummy');
+        return redirect()->route('dashboard')->with('success', 'Seluruh data simulasi (Proyek, Anggaran, Pajak & Jurnal Simulasi) berhasil dibersihkan dari database server!');
+    }
+
     /**
      * Jurnal Kas & Bank (BKM - Kas Masuk, BKK - Kas Keluar, Mutasi Transfer)
      * Signature simpleakunting 3-6 architecture.
