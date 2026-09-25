@@ -44,7 +44,11 @@ export default function Welcome() {
                     name="description" 
                     content="SimpleAkunting - Platform dan layanan akuntansi profesional multi-tenant untuk UMKM, BUMDesa, Koperasi, dan Perusahaan di Jawa Timur dan Indonesia." 
                 />
-                <link rel="icon" href="/images/favicon.png" type="image/png" />
+                <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+                <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2" />
+                <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2" />
+                <link rel="icon" type="image/png" href="/images/favicon.png?v=2" />
+                <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
             </Head>
 
             <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#1a2a4a] to-[#0d1b2a] text-[#e0e0e0] font-sans selection:bg-[#ff8c00]/30 selection:text-white">
