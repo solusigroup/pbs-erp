@@ -124,6 +124,9 @@ Route::middleware(['auth'])->group(function () {
         // Jurnal Umum Memorial
         Route::get('/jurnal',              [AkuntansiController::class, 'jurnal'])->name('jurnal');
         Route::post('/jurnal',             [AkuntansiController::class, 'storeJurnal'])->name('storeJurnal');
+        Route::put('/jurnal/{id}/approve', [AkuntansiController::class, 'approveJurnal'])->name('jurnal.approve');
+        Route::put('/jurnal/{id}',         [AkuntansiController::class, 'updateJurnal'])->name('jurnal.update');
+        Route::post('/jurnal/bulk-approve',[AkuntansiController::class, 'bulkApproveJurnal'])->name('jurnal.bulkApprove');
 
         // Hapus Jurnal & Rollback Saldo Buku Besar
         Route::delete('/jurnal/{id}',      [AkuntansiController::class, 'destroyJurnal'])->name('destroyJurnal');

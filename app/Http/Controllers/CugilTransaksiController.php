@@ -13,6 +13,7 @@ use App\Models\CugilSaleItem;
 use App\Models\CugilSupplier;
 use App\Models\Perusahaan;
 use App\Services\ImageCompressionService;
+use App\Services\JurnalAutoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -241,25 +242,42 @@ class CugilTransaksiController extends Controller
                     $po->save();
                 }
             }
+            
+            // Generate Jurnal DRAFT otomatis
+            $jurnalService = new JurnalAutoService();
+            $jurnalService->createJurnalPembelian($raw);
         });
 
         $msg = 'Penerimaan bahan baku (' . count($request->items) . ' SKU barang) berhasil dicatat.';
         if (!empty($request->nomor_po)) {
             $msg .= ' Status PO [' . $request->nomor_po . '] otomatis di-update menjadi DITERIMA (YA).';
         }
+        $msg .= ' Jurnal DRAFT pembelian telah dibuat.';
 
         return redirect()->route('cugil.raw.index')->with('success', $msg);
     }
 
     public function updateRawMaterialStatus(Request $request, $id)
     {
-        DB::transaction(function () use ($request, $id) {
+        $autoJurnalMsg = '';
+        DB::transaction(function () use ($request, $id, &$autoJurnalMsg) {
             $raw = CugilRawMaterial::where('id', $id)->lockForUpdate()->firstOrFail();
 
             if ($request->filled('payment')) {
-                $raw->payment = (float) $request->payment;
+                $oldPayment = (float) $raw->payment;
+                $newPayment = (float) $request->payment;
+                $deltaPayment = $newPayment - $oldPayment;
+
+                $raw->payment = $newPayment;
                 $raw->sisa_tagihan = max(0, round($raw->tagihan - $raw->payment, 2));
                 $raw->status_lunas = ($raw->sisa_tagihan <= 0) ? 'LUNAS' : ($raw->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
+
+                if ($deltaPayment > 0) {
+                    $jurnalService = new JurnalAutoService();
+                    if ($jurnalService->createJurnalPelunasanHutang($raw, $deltaPayment)) {
+                        $autoJurnalMsg = ' Jurnal DRAFT pelunasan hutang telah dibuat.';
+                    }
+                }
             }
             if ($request->filled('truk')) {
                 $raw->truk = $request->truk;
@@ -271,7 +289,7 @@ class CugilTransaksiController extends Controller
             $raw->save();
         });
 
-        return redirect()->route('cugil.raw.index')->with('success', 'Status pelunasan bahan baku berhasil diperbarui.');
+        return redirect()->route('cugil.raw.index')->with('success', 'Status pelunasan bahan baku berhasil diperbarui.' . $autoJurnalMsg);
     }
 
     // ─── SALES / PENJUALAN ───────────────────────────────────────────────────────
@@ -412,9 +430,13 @@ class CugilTransaksiController extends Controller
                     }
                 }
             }
+
+            // Generate Jurnal DRAFT otomatis
+            $jurnalService = new JurnalAutoService();
+            $jurnalService->createJurnalPenjualan($sale);
         });
 
-        return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $request->id_penjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat.');
+        return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $request->id_penjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat. Jurnal DRAFT penjualan telah dibuat.');
     }
 
     public function updateSaleStatus(Request $request, $id)
@@ -423,13 +445,25 @@ class CugilTransaksiController extends Controller
             'foto_timbangan' => 'nullable|image|mimes:jpeg,png,jpg,webp,heic|max:20480',
         ]);
 
-        DB::transaction(function () use ($request, $id) {
+        $autoJurnalMsg = '';
+        DB::transaction(function () use ($request, $id, &$autoJurnalMsg) {
             $sale = CugilSale::where('id', $id)->lockForUpdate()->firstOrFail();
 
             if ($request->filled('payment')) {
-                $sale->payment = (float) $request->payment;
+                $oldPayment = (float) $sale->payment;
+                $newPayment = (float) $request->payment;
+                $deltaPayment = $newPayment - $oldPayment;
+
+                $sale->payment = $newPayment;
                 $sale->sisa_piutang = max(0, round($sale->tagihan - $sale->payment, 2));
                 $sale->status_pelunasan = ($sale->sisa_piutang <= 0) ? 'LUNAS' : ($sale->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
+
+                if ($deltaPayment > 0) {
+                    $jurnalService = new JurnalAutoService();
+                    if ($jurnalService->createJurnalPelunasanPiutang($sale, $deltaPayment)) {
+                        $autoJurnalMsg = ' Jurnal DRAFT pelunasan piutang telah dibuat.';
+                    }
+                }
             }
             if ($request->filled('broker')) {
                 $sale->broker = $request->broker;
@@ -449,7 +483,7 @@ class CugilTransaksiController extends Controller
             $sale->save();
         });
 
-        return redirect()->route('cugil.sales.index')->with('success', 'Status pelunasan & data penjualan berhasil diperbarui.');
+        return redirect()->route('cugil.sales.index')->with('success', 'Status pelunasan & data penjualan berhasil diperbarui.' . $autoJurnalMsg);
     }
 
     public function uploadFotoTimbangan(Request $request, $id)
@@ -567,8 +601,13 @@ class CugilTransaksiController extends Controller
             // 4. Hapus record transaksi penjualan
             $sale->delete();
 
+            // 5. Reverse jurnal otomatis
+            $jurnalService = new JurnalAutoService();
+            $reversed = $jurnalService->reverseByReference('AUTO-PENJUALAN-SALE-' . $id);
+            $reverseMsg = $reversed > 0 ? " {$reversed} jurnal otomatis terkait telah di-reverse dan dihapus." : "";
+
             return redirect()->route('cugil.sales.index')
-                ->with('success', "Transaksi Penjualan [{$idPenjualan}] berhasil dihapus. Stok {$itemsCount} SKU barang telah otomatis di-rollback ke gudang.");
+                ->with('success', "Transaksi Penjualan [{$idPenjualan}] berhasil dihapus. Stok {$itemsCount} SKU barang telah otomatis di-rollback ke gudang." . $reverseMsg);
         });
     }
 
@@ -614,7 +653,12 @@ class CugilTransaksiController extends Controller
             // 4. Hapus data penerimaan bahan baku
             $raw->delete();
 
-            $msg = "Penerimaan Bahan Baku dari [{$namaPemasok}] berhasil dihapus. Stok {$itemsCount} item telah di-rollback.";
+            // 5. Reverse jurnal otomatis
+            $jurnalService = new JurnalAutoService();
+            $reversed = $jurnalService->reverseByReference('AUTO-PEMBELIAN-RAW-' . $id);
+            $reverseMsg = $reversed > 0 ? " {$reversed} jurnal otomatis terkait telah di-reverse dan dihapus." : "";
+
+            $msg = "Penerimaan Bahan Baku dari [{$namaPemasok}] berhasil dihapus. Stok {$itemsCount} item telah di-rollback." . $reverseMsg;
             if (!empty($nomorPO) && isset($po)) {
                 $msg .= " Status PO [{$nomorPO}] telah dikembalikan menjadi 'Belum Diterima'.";
             }

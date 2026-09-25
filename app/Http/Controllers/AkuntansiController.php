@@ -747,6 +747,55 @@ class AkuntansiController extends Controller
         return redirect()->route('akuntansi.jurnal')->with('success', 'Jurnal memorial ' . $request->no_transaksi . ' berhasil dibukukan.');
     }
 
+    public function approveJurnal(Request $request, $id, \App\Services\JurnalAutoService $jurnalService)
+    {
+        $jurnal = JurnalUmum::findOrFail($id);
+        
+        if ($jurnal->is_posted) {
+            return back()->with('error', "Jurnal {$jurnal->no_transaksi} sudah di-approve sebelumnya.");
+        }
+
+        if ($jurnalService->approveJurnal($jurnal)) {
+            return back()->with('success', "Jurnal {$jurnal->no_transaksi} berhasil di-approve dan di-posting ke Buku Besar.");
+        }
+
+        return back()->with('error', "Gagal melakukan approve pada Jurnal {$jurnal->no_transaksi}.");
+    }
+
+    public function updateJurnal(Request $request, $id, \App\Services\JurnalAutoService $jurnalService)
+    {
+        $jurnal = JurnalUmum::findOrFail($id);
+        
+        $request->validate([
+            'tanggal' => 'required|date',
+            'deskripsi' => 'required|string'
+        ]);
+
+        $jurnalService->updateJurnal($jurnal, $request->all());
+
+        return back()->with('success', "Jurnal {$jurnal->no_transaksi} berhasil diperbarui.");
+    }
+
+    public function bulkApproveJurnal(Request $request, \App\Services\JurnalAutoService $jurnalService)
+    {
+        $request->validate([
+            'jurnal_ids' => 'required|array',
+            'jurnal_ids.*' => 'exists:jurnal_umum,id_jurnal'
+        ]);
+
+        $result = $jurnalService->bulkApprove($request->jurnal_ids);
+
+        if ($result['approved'] > 0) {
+            $msg = "{$result['approved']} Jurnal berhasil di-approve dan di-posting ke Buku Besar.";
+            if ($result['failed'] > 0) {
+                $msg .= " Namun {$result['failed']} jurnal gagal di-approve (mungkin sudah diposting sebelumnya).";
+            }
+            return back()->with('success', $msg);
+        }
+
+        return back()->with('error', "Gagal melakukan bulk approve. Pastikan jurnal yang dipilih belum diposting.");
+    }
+
     /**
      * Laporan Keuangan (Laba Rugi & Neraca)
      */
