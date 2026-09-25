@@ -65,7 +65,7 @@
 
     <!-- Filter & Search Toolbar -->
     <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-lg">
-        <form method="GET" action="{{ route('akuntansi.jurnal') }}" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+        <form method="GET" action="{{ route('akuntansi.jurnal') }}" class="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
             <div>
                 <label class="block text-[11px] text-slate-400 font-medium mb-1">Tanggal Dari</label>
                 <input type="date" name="tanggal_dari" value="{{ $tanggalDari ?? '' }}" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white">
@@ -76,7 +76,18 @@
                 <input type="date" name="tanggal_sampai" value="{{ $tanggalSampai ?? '' }}" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white">
             </div>
 
-            <div class="sm:col-span-2 flex items-end gap-2">
+            <div>
+                <label class="block text-[11px] text-slate-400 font-medium mb-1">Record per Halaman</label>
+                <select name="per_page" onchange="this.form.submit()" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold">
+                    <option value="15" {{ ($perPage ?? 15) == 15 ? 'selected' : '' }}>15 Record</option>
+                    <option value="30" {{ ($perPage ?? 15) == 30 ? 'selected' : '' }}>30 Record</option>
+                    <option value="50" {{ ($perPage ?? 15) == 50 ? 'selected' : '' }}>50 Record</option>
+                    <option value="100" {{ ($perPage ?? 15) == 100 ? 'selected' : '' }}>100 Record</option>
+                    <option value="500" {{ ($perPage ?? 15) == 500 ? 'selected' : '' }}>500 Record</option>
+                </select>
+            </div>
+
+            <div class="sm:col-span-1 lg:col-span-2 flex items-end gap-2">
                 <div class="flex-1">
                     <label class="block text-[11px] text-slate-400 font-medium mb-1">Pencarian</label>
                     <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="No Transaksi / Deskripsi..." class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white">

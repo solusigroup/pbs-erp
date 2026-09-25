@@ -682,6 +682,11 @@ class AkuntansiController extends Controller
         $tanggalDari = $request->query('tanggal_dari');
         $tanggalSampai = $request->query('tanggal_sampai');
         $search = $request->query('search');
+        $perPage = (int) $request->query('per_page', 15);
+
+        if (!in_array($perPage, [15, 30, 50, 100, 500])) {
+            $perPage = 15;
+        }
 
         $query = JurnalUmum::with('details.akun');
 
@@ -697,10 +702,10 @@ class AkuntansiController extends Controller
             });
         }
 
-        $jurnals = $query->orderBy('tanggal', 'desc')->orderBy('id_jurnal', 'desc')->paginate(15)->withQueryString();
+        $jurnals = $query->orderBy('tanggal', 'desc')->orderBy('id_jurnal', 'desc')->paginate($perPage)->withQueryString();
         $akuns = Akun::where('is_active', true)->orderBy('kode_akun')->get();
 
-        return view('akuntansi.jurnal', compact('jurnals', 'akuns', 'tanggalDari', 'tanggalSampai', 'search'));
+        return view('akuntansi.jurnal', compact('jurnals', 'akuns', 'tanggalDari', 'tanggalSampai', 'search', 'perPage'));
     }
 
     /**
