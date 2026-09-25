@@ -48,11 +48,16 @@
         
         <!-- Official Tax Status Notice -->
         <div class="border border-purple-300 bg-purple-50 text-purple-950 px-4 py-2 rounded-xl mb-4 text-[11px] flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-circle-info text-purple-700"></i>
-                <span><strong>Status Perpajakan:</strong> Nomor Pengukuhan PKP PT Pinastika Bhakti Semesta dalam proses penetapan KPP Pratama Mojokerto.</span>
+            <div class="flex items-center gap-3">
+                <div class="h-8 w-8 shrink-0 flex items-center justify-center">
+                    <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PT Pinastika Bhakti Semesta" class="h-full w-full object-contain">
+                </div>
+                <div>
+                    <span class="font-bold text-slate-900">PT PINASTIKA BHAKTI SEMESTA</span> &bull; 
+                    <span><strong>Status Perpajakan:</strong> Nomor Pengukuhan PKP dalam proses penetapan KPP Pratama Mojokerto.</span>
+                </div>
             </div>
-            <span class="font-bold uppercase tracking-wider text-[10px] bg-purple-200 px-2 py-0.5 rounded text-purple-900">
+            <span class="font-bold uppercase tracking-wider text-[10px] bg-purple-200 px-2 py-0.5 rounded text-purple-900 shrink-0">
                 PROFORMA e-FAKTUR PPN
             </span>
         </div>
@@ -82,7 +87,7 @@
                     </tr>
                     <tr>
                         <td class="text-slate-600 py-0.5">NPWP</td>
-                        <td class="font-mono font-bold text-slate-950">: {{ $perusahaan->npwp ?? '01.234.567.8-602.000' }} <span class="text-[10px] font-normal text-purple-700">(Status PKP: Dalam Proses Pengajuan)</span></td>
+                        <td class="font-mono font-bold text-slate-950">: {{ $perusahaan->npwp ?? '43.688.232.8-602.000' }} <span class="text-[10px] font-normal text-purple-700">(Status PKP: Dalam Proses Pengajuan)</span></td>
                     </tr>
                 </table>
             </div>

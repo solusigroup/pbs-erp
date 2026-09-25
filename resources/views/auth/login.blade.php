@@ -29,8 +29,8 @@
     <div class="w-full max-w-md relative z-10">
         <!-- Brand Header -->
         <div class="text-center mb-8">
-            <div class="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 items-center justify-center text-white font-black text-2xl shadow-xl shadow-orange-500/25 mb-4 border border-amber-400/30">
-                PBS
+            <div class="inline-flex h-20 w-20 rounded-2xl bg-white p-2 items-center justify-center shadow-xl shadow-emerald-900/20 mb-4 border border-slate-700/80 overflow-hidden">
+                <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PT Pinastika Bhakti Semesta" class="h-full w-full object-contain">
             </div>
             <h1 class="text-2xl font-black tracking-tight text-white">PBS-ERP</h1>
             <p class="text-xs font-semibold text-amber-500 uppercase tracking-widest mt-1">PT Pinastika Bhakti Semesta</p>

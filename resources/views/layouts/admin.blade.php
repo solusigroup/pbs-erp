@@ -85,8 +85,8 @@
         <!-- Logo & Branding Header -->
         <div class="h-16 px-4 border-b border-slate-800/80 flex items-center justify-between sidebar-header-branding">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-orange-500/20 shrink-0">
-                    PBS
+                <div class="h-10 w-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-orange-500/10 shrink-0 border border-slate-700/60 overflow-hidden">
+                    <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PBS" class="h-full w-full object-contain">
                 </div>
                 <div class="sidebar-text truncate">
                     <h1 class="text-base font-extrabold tracking-tight text-white leading-tight">PBS-ERP</h1>

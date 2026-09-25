@@ -178,12 +178,12 @@
                     <i class="fas fa-building"></i>
                 </div>
                 <div class="flex items-center gap-3 border-b border-slate-800/80 pb-4 mb-4">
-                    <div class="h-12 w-12 rounded-2xl bg-amber-500 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                        {{ $perusahaan->singkatan ?? 'PBS' }}
+                    <div class="h-14 w-14 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-slate-700/80 shrink-0">
+                        <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PBS" class="h-full w-full object-contain">
                     </div>
                     <div>
                         <h4 class="text-sm font-black text-white leading-tight">{{ $perusahaan->nama_perusahaan ?? 'PT Pinastika Bhakti Semesta' }}</h4>
-                        <span class="text-[10px] text-amber-400 font-bold tracking-widest uppercase">Waste Management & RDF Supplier</span>
+                        <span class="text-[10px] text-amber-400 font-bold tracking-widest uppercase">Waste Management &amp; RDF Supplier</span>
                     </div>
                 </div>
 

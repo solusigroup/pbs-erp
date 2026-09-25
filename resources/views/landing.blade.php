@@ -32,8 +32,8 @@
         <!-- Header & Nav -->
         <header class="flex items-center justify-between py-6">
             <a href="#" class="flex items-center gap-3">
-                <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white font-black text-xl shadow-xl shadow-orange-500/25 border border-amber-400/30">
-                    PBS
+                <div class="h-11 w-11 rounded-2xl bg-white p-1 flex items-center justify-center shadow-xl shadow-orange-500/10 border border-slate-700/80 overflow-hidden shrink-0">
+                    <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PT Pinastika Bhakti Semesta" class="h-full w-full object-contain">
                 </div>
                 <div>
                     <div class="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
