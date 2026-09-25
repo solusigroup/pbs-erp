@@ -27,9 +27,10 @@
                 <span>Jurnal Kas &amp; Bank</span>
             </a>
             @if(auth()->user()->canMutate())
-            <form action="{{ route('akuntansi.jurnal.adjustHppCugil') }}" method="POST" class="inline" onsubmit="return confirm('Jalankan Jurnal Penyesuaian HPP CUGIL Akhir Periode?\n\nSaldo Persediaan Bahan Baku (1-1610) akan dialokasikan ke Beban Pokok Pendapatan HPP (5-1100) sehingga saldo persediaan = Rp 0.')">
+            <form action="{{ route('akuntansi.jurnal.adjustHppCugil') }}" method="POST" class="inline" onsubmit="return confirm('Jalankan Jurnal Penyesuaian HPP CUGIL per tanggal {{ \Carbon\Carbon::parse($tanggalSampai ?? date('Y-m-d'))->format('d/m/Y') }}?\n\nSaldo akumulasi Persediaan Bahan Baku (1-1610) per tanggal tersebut akan dialokasikan ke HPP (5-1100).')">
                 @csrf
-                <button type="submit" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-cyan-500/20" title="Penyesuaian HPP CUGIL Akhir Periode (Zeroing Persediaan Bahan Baku)">
+                <input type="hidden" name="tanggal" value="{{ $tanggalSampai ?? date('Y-m-d') }}">
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-cyan-500/20" title="Penyesuaian HPP CUGIL per Periode Tanggal Filter (Zeroing Persediaan Bahan Baku)">
                     <i class="fas fa-wand-magic-sparkles text-amber-300"></i>
                     <span>⚡ Penyesuaian HPP CUGIL</span>
                 </button>
