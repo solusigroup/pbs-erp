@@ -18,7 +18,7 @@ class PerusahaanController extends Controller
             $perusahaan = Perusahaan::create([
                 'nama_perusahaan' => 'PT Pinastika Bhakti Semesta',
                 'singkatan' => 'PBS',
-                'npwp' => '01.234.567.8-602.000',
+                'npwp' => '43.688.232.8-602.000',
                 'alamat' => 'Jl. Suromulang Barat VI/20, Mojokerto',
                 'kota' => 'Mojokerto',
                 'provinsi' => 'Jawa Timur',
