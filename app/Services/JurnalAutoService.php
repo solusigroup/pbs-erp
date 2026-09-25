@@ -68,7 +68,7 @@ class JurnalAutoService
 
         // Debit: Persediaan Bahan Baku
         $details[] = [
-            'kode_akun' => '1-1500',
+            'kode_akun' => '1-1610',
             'keterangan_baris' => "Pembelian bahan baku dari {$namaSupplier} (PO: {$nomorPO})",
             'debit' => $tagihan,
             'kredit' => 0,
@@ -104,9 +104,9 @@ class JurnalAutoService
     /**
      * Buat jurnal draft dari penjualan barang jadi.
      * 
-     * Dr. 1-1400 Piutang Usaha ........... sisa_piutang
+     * Dr. 1-1300 Piutang Usaha ........... sisa_piutang
      * Dr. 1-1210 Kas/Bank ................ payment (jika ada DP)
-     *     Cr. 4-1000 Pendapatan Penjualan . tagihan
+     *     Cr. 4-1100 Pendapatan Penjualan . tagihan
      */
     public function createJurnalPenjualan(CugilSale $sale): ?JurnalUmum
     {
@@ -134,7 +134,7 @@ class JurnalAutoService
         // Debit: Piutang Usaha (jika ada sisa piutang)
         if ($sisaPiutang > 0) {
             $details[] = [
-                'kode_akun' => '1-1400',
+                'kode_akun' => '1-1300',
                 'keterangan_baris' => "Piutang penjualan ke {$namaCustomer} (INV: {$nomorInvoice})",
                 'debit' => $sisaPiutang,
                 'kredit' => 0,
@@ -153,7 +153,7 @@ class JurnalAutoService
 
         // Kredit: Pendapatan Penjualan
         $details[] = [
-            'kode_akun' => '4-1000',
+            'kode_akun' => '4-1100',
             'keterangan_baris' => "Pendapatan penjualan ke {$namaCustomer} (INV: {$nomorInvoice})",
             'debit' => 0,
             'kredit' => $tagihan,
@@ -213,7 +213,7 @@ class JurnalAutoService
      * Buat jurnal draft dari pelunasan piutang customer.
      * 
      * Dr. 1-1210 Kas/Bank ................ jumlah_terima
-     *     Cr. 1-1400 Piutang Usaha ....... jumlah_terima
+     *     Cr. 1-1300 Piutang Usaha ....... jumlah_terima
      */
     public function createJurnalPelunasanPiutang(CugilSale $sale, float $jumlahTerima): ?JurnalUmum
     {
@@ -237,7 +237,7 @@ class JurnalAutoService
                 'kredit' => 0,
             ],
             [
-                'kode_akun' => '1-1400',
+                'kode_akun' => '1-1300',
                 'keterangan_baris' => "Pelunasan piutang dari {$namaCustomer} (INV: {$nomorInvoice})",
                 'debit' => 0,
                 'kredit' => $jumlahTerima,

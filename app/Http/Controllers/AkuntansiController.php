@@ -160,11 +160,16 @@ class AkuntansiController extends Controller
         }
 
         DB::transaction(function () {
-            // Set saldo_awal = 0 dan sesuaikan saldo_berjalan
-            $akuns = Akun::with('detailJurnal')->get();
+            // Set saldo_awal = 0 dan sesuaikan saldo_berjalan (Hanya untuk jurnal yang sudah POSTED)
+            $akuns = Akun::all();
             foreach ($akuns as $a) {
-                $totalDebit = $a->detailJurnal->sum('debit');
-                $totalKredit = $a->detailJurnal->sum('kredit');
+                $postedDetails = \App\Models\JurnalDetail::where('kode_akun', $a->kode_akun)
+                    ->whereHas('jurnal', function($q) {
+                        $q->where('is_posted', true);
+                    })->get();
+                    
+                $totalDebit = $postedDetails->sum('debit');
+                $totalKredit = $postedDetails->sum('kredit');
 
                 $a->saldo_awal = 0;
                 if ($a->saldo_normal === 'Debit') {
@@ -1044,22 +1049,19 @@ class AkuntansiController extends Controller
             $tipeJurnal = $jurnal->tipe_jurnal;
             $detailsCount = $jurnal->details->count();
 
-            // 1. Rollback Saldo Berjalan pada setiap Akun (COA)
-            foreach ($jurnal->details as $detail) {
-                if (!empty($detail->kode_akun)) {
-                    $akun = Akun::where('kode_akun', $detail->kode_akun)->lockForUpdate()->first();
-                    if ($akun) {
-                        // Kebalikan dari saat posting:
-                        // Jika Saldo Normal Debit: Debit menambah (+), Kredit mengurangi (-)
-                        // Maka rollback: Debit dikurangkan (-), Kredit ditambahkan (+)
-                        if ($akun->saldo_normal === 'Debit') {
-                            $akun->saldo_berjalan -= ((float) $detail->debit - (float) $detail->kredit);
-                        } else {
-                            // Saldo Normal Kredit: Kredit menambah (+), Debit mengurangi (-)
-                            // Maka rollback: Kredit dikurangkan (-), Debit ditambahkan (+)
-                            $akun->saldo_berjalan -= ((float) $detail->kredit - (float) $detail->debit);
+            // 1. Rollback Saldo Berjalan pada setiap Akun (COA) hanya jika sudah diposting
+            if ($jurnal->is_posted) {
+                foreach ($jurnal->details as $detail) {
+                    if (!empty($detail->kode_akun)) {
+                        $akun = Akun::where('kode_akun', $detail->kode_akun)->lockForUpdate()->first();
+                        if ($akun) {
+                            if ($akun->saldo_normal === 'Debit') {
+                                $akun->saldo_berjalan -= ((float) $detail->debit - (float) $detail->kredit);
+                            } else {
+                                $akun->saldo_berjalan -= ((float) $detail->kredit - (float) $detail->debit);
+                            }
+                            $akun->save();
                         }
-                        $akun->save();
                     }
                 }
             }
