@@ -393,19 +393,44 @@
 
                 <!-- TREE VISUALIZATION -->
                 <div class="space-y-8">
-                    <!-- LEVEL 1: RUPS & KOMISARIS -->
-                    <div class="flex justify-center">
-                        <div class="w-full max-w-md rounded-2xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 text-center shadow-xl relative group hover:border-amber-400 transition">
-                            <span class="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
-                                Otoritas Kebijakan Tertinggi
-                            </span>
-                            <h4 class="text-sm font-black text-white mt-1.5 uppercase">Rapat Umum Pemegang Saham (RUPS) &amp; Dewan Komisaris</h4>
-                            <p class="text-[11px] text-slate-400 mt-0.5">Pengawasan Strategis, Pengesahan Rencana Bisnis &amp; Tata Kelola Korporasi</p>
+                    <!-- LEVEL 1: RUPS & DEWAN KOMISARIS -->
+                    <div class="space-y-4">
+                        <div class="flex justify-center">
+                            <div class="w-full max-w-md rounded-2xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 text-center shadow-xl relative group hover:border-amber-400 transition">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                                    Otoritas Kebijakan Tertinggi
+                                </span>
+                                <h4 class="text-sm font-black text-white mt-1.5 uppercase">Rapat Umum Pemegang Saham (RUPS) &amp; Dewan Komisaris</h4>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Pengawasan Strategis, Pengesahan Rencana Bisnis &amp; Tata Kelola Korporasi</p>
+                            </div>
+                        </div>
+
+                        <!-- 2 KOMISARIS CARDS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                            <!-- KOMISARIS UTAMA -->
+                            <div class="rounded-2xl border-2 border-amber-500/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 p-4 text-center shadow-lg hover:border-amber-400 transition">
+                                <div class="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-2.5 font-bold text-base">
+                                    <i class="fas fa-shield-halved"></i>
+                                </div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Komisaris Utama</span>
+                                <h4 class="text-sm font-black text-white mt-0.5">Safira Putri Imanina</h4>
+                                <p class="text-xs text-amber-300/80 font-medium">Komisaris Utama</p>
+                            </div>
+
+                            <!-- KOMISARIS -->
+                            <div class="rounded-2xl border border-slate-700 bg-slate-950/90 p-4 text-center shadow-lg hover:border-amber-500/50 transition">
+                                <div class="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-2.5 font-bold text-base">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Komisaris</span>
+                                <h4 class="text-sm font-black text-white mt-0.5">Handoko</h4>
+                                <p class="text-xs text-amber-300/80 font-medium">Komisaris</p>
+                            </div>
                         </div>
                     </div>
 
                     <!-- CONNECTOR LINE 1 -->
-                    <div class="flex justify-center -my-4">
+                    <div class="flex justify-center -my-2">
                         <div class="w-0.5 h-8 bg-gradient-to-b from-amber-500/80 to-amber-500/30"></div>
                     </div>
 
@@ -417,55 +442,70 @@
                             </span>
                         </div>
 
-                        <!-- 3 BOD CARDS -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- 4 BOD CARDS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <!-- DIREKTUR UTAMA -->
-                            <div class="rounded-2xl border border-slate-700 bg-slate-950/90 p-5 text-center shadow-lg hover:border-amber-500/60 transition flex flex-col justify-between">
+                            <div class="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-center shadow-xl hover:border-amber-400 transition flex flex-col justify-between">
                                 <div>
-                                    <div class="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                                    <div class="h-11 w-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center mx-auto mb-3 font-bold text-lg shadow-md shadow-amber-500/30">
                                         <i class="fas fa-crown"></i>
                                     </div>
                                     <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">President Director</span>
-                                    <h4 class="text-sm font-black text-white mt-1">M. Winardi</h4>
-                                    <p class="text-xs text-amber-300/80 font-medium">Direktur Utama</p>
+                                    <h4 class="text-sm font-black text-white mt-1">Sendy Hartono</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur Utama</p>
                                 </div>
                                 <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400 leading-snug">
-                                    Penanggung jawab operasional harian, kepatuhan legal, dan hubungan kemitraan strategis BUMN / Pemda.
+                                    Penanggung jawab kebijakan umum, kepatuhan legal, dan kepemimpinan korporasi PT PBS.
                                 </div>
                             </div>
 
-                            <!-- DIREKTUR KEUANGAN & PAJAK -->
-                            <div class="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-center shadow-2xl hover:border-amber-400 transition relative flex flex-col justify-between">
+                            <!-- DIREKTUR AKUNTANSI & UMUM -->
+                            <div class="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-center shadow-xl hover:border-amber-400 transition relative flex flex-col justify-between">
                                 <div class="absolute -top-3 left-1/2 -translate-x-1/2">
                                     <span class="bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow">
-                                        BOD Finance &amp; Tax
+                                        Akuntansi &amp; Umum
                                     </span>
                                 </div>
                                 <div>
-                                    <div class="h-12 w-12 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center mx-auto mb-3 font-black text-lg shadow-md shadow-amber-500/30">
+                                    <div class="h-11 w-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center mx-auto mb-3 font-black text-lg shadow-md shadow-amber-500/30">
                                         <i class="fas fa-scale-balanced"></i>
                                     </div>
-                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Director of Finance &amp; Tax</span>
-                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Kurniawan, S.E., Ak., CA., M.Ak.</h4>
-                                    <p class="text-xs text-amber-300 font-semibold">Direktur Keuangan &amp; Perpajakan</p>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Director</span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Kurniawan</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur - Akuntansi &amp; Umum</p>
                                 </div>
                                 <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-300 leading-snug">
-                                    Otorisasi anggaran, audit SAK, kepatuhan PPN/PPh WAPU BUMN 030, penagihan invoice &amp; perbankan korporasi.
+                                    Pengelolaan akuntansi, keuangan, perpajakan DJP, audit SAK, dan administrasi umum korporasi.
                                 </div>
                             </div>
 
-                            <!-- DIREKTUR OPERASIONAL & COMMERCIAL -->
+                            <!-- DIREKTUR TEKNIK & OPERASIONAL -->
                             <div class="rounded-2xl border border-slate-700 bg-slate-950/90 p-5 text-center shadow-lg hover:border-amber-500/60 transition flex flex-col justify-between">
                                 <div>
-                                    <div class="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 font-bold text-lg">
-                                        <i class="fas fa-industry"></i>
+                                    <div class="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                                        <i class="fas fa-gears"></i>
                                     </div>
-                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Operations &amp; Commercial</span>
-                                    <h4 class="text-sm font-black text-white mt-1">Ach. Chumaidi</h4>
-                                    <p class="text-xs text-amber-300/80 font-medium">Direktur Operasional &amp; Commercial</p>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Director</span>
+                                    <h4 class="text-sm font-black text-white mt-1">Yudo Ariyanto</h4>
+                                    <p class="text-xs text-amber-300/80 font-medium">Direktur - Teknik &amp; Operasional</p>
                                 </div>
                                 <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400 leading-snug">
-                                    Manajemen pasokan cacahan (Cuci Giling), logistik pengiriman RDF, dan kontrak penjualan SIG Pabrik Tuban.
+                                    Rekayasa teknis permesinan daur ulang, pemeliharaan fasilitas pabrik, dan keandalan operasional.
+                                </div>
+                            </div>
+
+                            <!-- DIREKTUR OPERASIONAL -->
+                            <div class="rounded-2xl border border-slate-700 bg-slate-950/90 p-5 text-center shadow-lg hover:border-amber-500/60 transition flex flex-col justify-between">
+                                <div>
+                                    <div class="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 font-bold text-lg">
+                                        <i class="fas fa-industry"></i>
+                                    </div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400">Director</span>
+                                    <h4 class="text-sm font-black text-white mt-1">Winardi Sugianto, SE</h4>
+                                    <p class="text-xs text-amber-300/80 font-medium">Direktur - Operasional</p>
+                                </div>
+                                <div class="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400 leading-snug">
+                                    Manajemen rantai pasok pengolahan sampah RDF, logistik pengiriman, dan operasional lapangan.
                                 </div>
                             </div>
                         </div>
@@ -533,65 +573,199 @@
                 </div>
             </div>
 
-            <!-- ─── DAFTAR KARTU PROFIL DEWAN DIREKSI LENGKAP (DYNAMIC DARI DATABASE) ─── -->
+            <!-- ─── DAFTAR KARTU PROFIL PENGURUS KORPORASI & BOD (DEWAN KOMISARIS & DEWAN DIREKSI) ─── -->
             <div class="mb-16">
                 <div class="text-center mb-10">
-                    <span class="text-xs font-bold tracking-widest text-[#ff8c00] uppercase">EXECUTIVE LEADERSHIP TEAM</span>
-                    <h3 class="text-2xl font-black text-white mt-1">Dewan Direksi (Board of Directors)</h3>
+                    <span class="text-xs font-bold tracking-widest text-[#ff8c00] uppercase">EXECUTIVE LEADERSHIP &amp; GOVERNANCE TEAM</span>
+                    <h3 class="text-2xl font-black text-white mt-1">Pengurus Korporasi &amp; Dewan Direksi (BOD)</h3>
+                    <p class="text-xs text-slate-400 mt-2 max-w-xl mx-auto">Kepemimpinan strategis, kepatuhan tata kelola, dan eksekusi operasional PT Pinastika Bhakti Semesta</p>
                     <div class="mx-auto mt-2.5 h-1 w-12 rounded bg-[#ff8c00]"></div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    @forelse($directors as $d)
-                        <div class="rounded-3xl border {{ str_contains(strtolower($d->jabatan), 'finance') || str_contains(strtolower($d->jabatan), 'tax') ? 'border-amber-500/50 bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/20 shadow-2xl' : 'border-slate-800 bg-slate-900/60 shadow-xl' }} p-6 flex flex-col justify-between space-y-4 hover:border-amber-500/60 transition">
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="h-16 w-16 rounded-2xl border-2 border-amber-500/40 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-400 shadow-md shrink-0">
-                                        @if($d->foto && file_exists(public_path($d->foto)))
-                                            <img src="{{ asset($d->foto) }}" alt="{{ $d->nama }}" class="h-full w-full object-cover object-top">
-                                        @else
-                                            {{ substr($d->nama, 0, 1) }}
-                                        @endif
-                                    </div>
-                                    <div>
-                                        <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                                            Dewan Direksi #{{ $d->urutan }}
-                                        </span>
-                                        <h4 class="text-sm font-black text-white mt-1 leading-snug">{{ $d->nama }}</h4>
-                                        <p class="text-xs text-amber-300 font-medium">{{ $d->jabatan }}</p>
-                                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 1. SAFIRA PUTRI IMANINA -->
+                    <div class="rounded-3xl border-2 border-amber-500/60 bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/20 shadow-2xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-400 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border-2 border-amber-500/40 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-400 shadow-md shrink-0">
+                                    <i class="fas fa-shield-halved text-2xl text-amber-400"></i>
                                 </div>
-
-                                <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
-                                    @if($d->keterangan)
-                                        <div class="text-[11px] text-slate-300 italic leading-relaxed">
-                                            "{{ $d->keterangan }}"
-                                        </div>
-                                    @endif
-                                    @if($d->email)
-                                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800">
-                                            <span class="text-slate-400">Email Resmi:</span>
-                                            <span class="font-mono text-amber-400 truncate max-w-[170px]">{{ $d->email }}</span>
-                                        </div>
-                                    @endif
-                                    @if($d->telepon)
-                                        <div class="flex items-center justify-between text-[11px]">
-                                            <span class="text-slate-400">Kontak:</span>
-                                            <span class="font-mono text-slate-200">{{ $d->telepon }}</span>
-                                        </div>
-                                    @endif
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                        Dewan Komisaris
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Safira Putri Imanina</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Komisaris-Utama</p>
                                 </div>
                             </div>
 
-                            <div class="pt-2">
-                                <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    <i class="fas fa-shield-check mr-1"></i> Otoritas &amp; Tanda Tangan Sah
-                                </span>
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Pengawasan tertinggi tata kelola korporasi, pengesahan arah kebijakan strategis, dan kepatuhan anggaran dasar perusahaan.
+                                </div>
                             </div>
                         </div>
-                    @empty
-                        <div class="col-span-3 text-center py-8 text-xs text-slate-400">Data Dewan Direksi PT PBS telah terintegrasi di sistem ERP.</div>
-                    @endforelse
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <i class="fas fa-certificate mr-1"></i> Pengawasan &amp; Tata Kelola Korporasi
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 2. HANDOKO -->
+                    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-500/60 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-slate-300 shadow-md shrink-0">
+                                    <i class="fas fa-user-check text-2xl text-amber-400"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                                        Dewan Komisaris
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Handoko</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Komisaris</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Fungsi pengawasan independen terhadap pelaksanaan kebijakan operasional dan kelangsungan usaha perseroan.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                <i class="fas fa-shield-check mr-1"></i> Pengawasan Independen
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 3. SENDY HARTONO -->
+                    <div class="rounded-3xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-400 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border-2 border-amber-500/50 bg-amber-500 text-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                                    <i class="fas fa-crown text-2xl text-slate-950"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                        Dewan Direksi (BOD)
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Sendy Hartono</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur Utama</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Pemimpin eksekutif korporasi, penetapan kebijakan operasional menyeluruh, dan hubungan kelembagaan mitra industri.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <i class="fas fa-check-circle mr-1"></i> Pimpinan Eksekutif Perseroan
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 4. KURNIAWAN -->
+                    <div class="rounded-3xl border-2 border-amber-500/60 bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/20 shadow-2xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-400 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border-2 border-amber-500/40 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-400 shadow-md shrink-0">
+                                    @if(file_exists(public_path('images/ayahrompi.png')))
+                                        <img src="{{ asset('images/ayahrompi.png') }}" alt="Kurniawan" class="h-full w-full object-cover object-top">
+                                    @else
+                                        K
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                        Dewan Direksi (BOD)
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Kurniawan</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur - Akuntansi &amp; Umum</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Otorisasi anggaran, kepatuhan perpajakan DJP, audit pembukuan SAK, dan administrasi umum perseroan.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <i class="fas fa-shield-check mr-1"></i> Otoritas Keuangan &amp; Akuntansi
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 5. YUDO ARIYANTO -->
+                    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-500/60 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-400 shadow-md shrink-0">
+                                    <i class="fas fa-gears text-2xl text-amber-400"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                        Dewan Direksi (BOD)
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Yudo Ariyanto</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur &ndash; Teknik &amp; Operasional</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Rekayasa teknis permesinan daur ulang, kesiapan lini produksi RDF, dan standarisasi operasional mesin.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <i class="fas fa-wrench mr-1"></i> Pengendalian Teknis &amp; Operasional
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 6. WINARDI SUGIANTO, SE -->
+                    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl p-6 flex flex-col justify-between space-y-4 hover:border-amber-500/60 transition">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-16 w-16 rounded-2xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-400 shadow-md shrink-0">
+                                    <i class="fas fa-industry text-2xl text-amber-400"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                        Dewan Direksi (BOD)
+                                    </span>
+                                    <h4 class="text-sm font-black text-white mt-1 leading-snug">Winardi Sugianto, SE</h4>
+                                    <p class="text-xs text-amber-300 font-semibold">Direktur - Operasional</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-300 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                                <div class="text-[11px] text-slate-300 leading-relaxed">
+                                    Manajemen pasokan cacahan sampah, logistik pengiriman RDF, dan koordinasi penerimaan SIG Pabrik Tuban.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <span class="w-full text-center block px-3 py-1 rounded-xl text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <i class="fas fa-truck-fast mr-1"></i> Manajemen Operasional &amp; Rantai Pasok
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -622,7 +796,7 @@
                             Kurniawan, S.E., Ak., CA., M.Ak., CMA., CIBA., CIAP.
                         </h3>
                         <p class="text-xs text-amber-300 font-semibold uppercase tracking-wider">
-                            Board of Director (Finance &amp; Tax) &bull; PT Pinastika Bhakti Semesta
+                            Direktur - Akuntansi &amp; Umum &bull; PT Pinastika Bhakti Semesta
                         </p>
 
                         <!-- Badges -->
@@ -635,7 +809,7 @@
                         </div>
 
                         <blockquote class="border-l-0 lg:border-l-4 border-amber-500 pl-0 lg:pl-4 italic text-slate-300 text-sm sm:text-base leading-relaxed py-1">
-                            "Sebagai Board of Director yang membidangi Finance &amp; Tax pada PT Pinastika Bhakti Semesta, kami menjamin seluruh transaksi pasokan RDF dan komoditas industri terkelola secara akuntabel, mematuhi standar SAK, memenuhi mekanisme pemungutan PPN WAPU BUMN, serta siap diaudit secara terbuka."
+                            "Sebagai Direktur yang membidangi Akuntansi &amp; Umum pada PT Pinastika Bhakti Semesta, kami menjamin seluruh tata kelola transaksi pasokan RDF dan komoditas industri terkelola secara akuntabel, mematuhi standar SAK, memenuhi mekanisme pemungutan PPN WAPU BUMN, serta siap diaudit secara terbuka."
                         </blockquote>
 
                         <!-- Qualifications Grid -->
