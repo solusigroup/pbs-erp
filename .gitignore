@@ -49,3 +49,4 @@ parse_excel_data.py
 # cugil_migrated_data.json (included for database seeder)
 /tests
 /scratch
+run_adjust_local.php

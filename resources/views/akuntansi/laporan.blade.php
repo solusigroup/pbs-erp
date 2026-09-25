@@ -3,8 +3,80 @@
 @section('title', 'Laporan Keuangan - SAK EP/EMKM (Neraca & Laba Rugi)')
 
 @section('content')
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; color: #0f172a !important; }
+        .print-card {
+            background: white !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            border-radius: 8px !important;
+            padding: 1rem !important;
+        }
+        .print-card * {
+            color: #0f172a !important;
+        }
+        .print-card .text-slate-400, .print-card .text-slate-300 {
+            color: #475569 !important;
+        }
+        .print-card .border-slate-800, .print-card .divide-slate-800\/60 > * {
+            border-color: #cbd5e1 !important;
+        }
+        .print-card .bg-slate-950\/40, .print-card .bg-slate-900 {
+            background-color: #f8fafc !important;
+        }
+        .print-card .text-emerald-400 {
+            color: #047857 !important;
+            font-weight: 700 !important;
+        }
+        .print-card .text-rose-400 {
+            color: #b91c1c !important;
+            font-weight: 700 !important;
+        }
+        .print-card .text-amber-400 {
+            color: #b45309 !important;
+            font-weight: 700 !important;
+        }
+        .print-card .text-sky-400 {
+            color: #0369a1 !important;
+            font-weight: 700 !important;
+        }
+    }
+</style>
+
+<!-- Print-Only Kop Surat Resmi Korporasi -->
+<div class="hidden print:block pb-4 mb-4">
+    <div class="flex items-start justify-between pb-3 border-b-2 border-slate-900">
+        <div class="flex items-center gap-4">
+            <div class="h-16 w-16 shrink-0 flex items-center justify-center p-1 border border-slate-300 rounded-lg">
+                <img src="{{ asset('images/logo-pbs.png') }}" alt="Logo PBS" class="h-full w-full object-contain">
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-950 uppercase">{{ $perusahaan->nama_perusahaan ?? 'PT PINASTIKA BHAKTI SEMESTA' }}</h1>
+                <p class="text-[11px] font-bold text-amber-700 uppercase">Pengolahan Limbah Industri, Bahan Bakar Alternatif RDF &amp; Pengelolaan Lingkungan</p>
+                <p class="text-[10px] text-slate-600 mt-0.5">{{ $perusahaan->alamat ?? 'Jl. Suromulang Barat VI/20, Mojokerto' }} | NPWP: {{ $perusahaan->npwp ?? '43.688.232.8-602.000' }} | Telp: {{ $perusahaan->telepon ?? '+62 821 4164 3495' }}</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <span class="inline-block border border-slate-900 bg-slate-950 text-white font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded">
+                DOKUMEN RESMI SAK
+            </span>
+            <div class="text-[10px] font-semibold text-slate-700 mt-1">Standar: SAK EP / EMKM</div>
+            <div class="text-[9px] text-slate-500 font-mono">Dicetak: {{ date('d/m/Y H:i') }} WIB</div>
+        </div>
+    </div>
+    <div class="text-center py-2 border-b border-slate-300">
+        <h2 class="text-sm font-black text-slate-950 uppercase tracking-wide">LAPORAN KEUANGAN KORPORASI</h2>
+        <p class="text-[11px] text-slate-600 font-medium">Periode: {{ \Carbon\Carbon::parse($tanggalDari)->format('d/m/Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSampai)->format('d/m/Y') }}</p>
+    </div>
+</div>
+
 <div class="space-y-6">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 no-print">
         <div>
             <div class="flex items-center gap-2.5">
                 <div class="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 text-emerald-400 shadow-lg">
@@ -32,15 +104,15 @@
                 </button>
             </form>
             @endif
-            <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-2">
-                <i class="fas fa-print text-amber-400"></i>
-                <span>Cetak Laporan</span>
-            </button>
+            <a href="{{ route('akuntansi.laporan.cetak', request()->query()) }}" target="_blank" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/25" title="Buka Dokumen Cetak Resmi A4 & Simpan PDF">
+                <i class="fas fa-print"></i>
+                <span>Cetak Laporan Resmi / PDF</span>
+            </a>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+        <div class="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between shadow-lg no-print">
             <div class="flex items-center gap-2.5">
                 <i class="fas fa-circle-check text-emerald-400 text-base"></i>
                 <span>{{ session('success') }}</span>
@@ -50,7 +122,7 @@
     @endif
 
     @if(session('error'))
-        <div class="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between shadow-lg">
+        <div class="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between shadow-lg no-print">
             <div class="flex items-center gap-2.5">
                 <i class="fas fa-triangle-exclamation text-rose-400 text-base"></i>
                 <span>{{ session('error') }}</span>
@@ -60,7 +132,7 @@
     @endif
 
     <!-- Filter Mode & Parameter Periode SAK EP/EMKM -->
-    <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-lg">
+    <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-lg no-print">
         <form method="GET" action="{{ route('akuntansi.laporan') }}" class="space-y-4 text-xs">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                 <div>
@@ -104,10 +176,10 @@
     </div>
 
     <!-- Tampilan Laporan Keuangan -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 print:block print:space-y-6">
 
         <!-- 1. LAPORAN LABA RUGI -->
-        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl space-y-4">
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl space-y-4 print-card">
             <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -220,7 +292,7 @@
         </div>
 
         <!-- 2. LAPORAN POSISI KEUANGAN (BALANCE SHEET / NERACA) -->
-        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl space-y-4">
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl space-y-4 print-card">
             <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -350,6 +422,35 @@
                 <i class="fas fa-check-double text-emerald-400 mr-1"></i>
                 Laporan Keuangan diverifikasi dan disupervisi langsung oleh Board of Director (Finance &amp; Tax).
             </div>
+        </div>
+    </div>
+
+    <!-- Print-Only Lembar Pengesahan Resmi -->
+    <div class="hidden print:block pt-6 border-t-2 border-slate-900 mt-6 break-inside-avoid">
+        <div class="text-right text-xs text-slate-800 mb-3 font-semibold">
+            {{ $perusahaan->kota ?? 'Mojokerto' }}, {{ \Carbon\Carbon::parse($tanggalSampai)->translatedFormat('d F Y') }}
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-center text-xs">
+            <div class="border border-slate-300 rounded-lg p-2.5 bg-white">
+                <span class="text-slate-600 block mb-12 text-[10px]">Dibuat &amp; Disusun Oleh,</span>
+                <strong class="block border-t border-slate-400 pt-1 text-slate-900">Staff Akuntansi &amp; Pajak</strong>
+                <span class="text-[9px] text-slate-500">Divisi Keuangan</span>
+            </div>
+            <div class="border border-slate-300 rounded-lg p-2.5 bg-white">
+                <span class="text-slate-600 block mb-12 text-[10px]">Diperiksa &amp; Diverifikasi Oleh,</span>
+                <strong class="block border-t border-slate-400 pt-1 text-slate-900">Manager Keuangan</strong>
+                <span class="text-[9px] text-slate-500">Divisi Keuangan</span>
+            </div>
+            <div class="border border-slate-900 rounded-lg p-2.5 bg-slate-50">
+                <span class="text-slate-900 block mb-12 text-[10px] font-bold">Disetujui &amp; Disahkan Oleh,</span>
+                <strong class="block border-t border-slate-900 pt-1 text-slate-950 font-black">
+                    {{ $perusahaan->bod_finance_tax ?? 'Kurniawan, S.E., Ak., CA., M.Ak.' }}
+                </strong>
+                <span class="text-[9px] text-slate-600 font-semibold">Board of Director (Finance &amp; Tax)</span>
+            </div>
+        </div>
+        <div class="mt-4 text-center text-[9px] text-slate-500 italic">
+            Dokumen Laporan Keuangan PBS-ERP &bull; PT Pinastika Bhakti Semesta &bull; SAK EP / EMKM
         </div>
     </div>
 </div>

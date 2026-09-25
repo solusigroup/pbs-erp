@@ -72,6 +72,21 @@
         .sidebar-collapsed .submenu-container {
             display: none !important;
         }
+        @media print {
+            #mainSidebar, #mobileBackdrop, header, footer, .no-print, [data-no-print] {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-[#070f1e] text-slate-200 antialiased flex flex-col md:flex-row relative overflow-x-hidden">

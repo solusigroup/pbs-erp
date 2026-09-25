@@ -854,6 +854,8 @@ class AkuntansiController extends Controller
             ? $this->hitungDataKeuanganPeriodik($tanggalDariKomparatif, $tanggalSampaiKomparatif) 
             : null;
 
+        $perusahaan = Perusahaan::first();
+
         return view('akuntansi.laporan', compact(
             'mode',
             'tanggalDari',
@@ -861,7 +863,40 @@ class AkuntansiController extends Controller
             'tanggalDariKomparatif',
             'tanggalSampaiKomparatif',
             'dataUtama',
-            'dataKomparatif'
+            'dataKomparatif',
+            'perusahaan'
+        ));
+    }
+
+    /**
+     * Cetak Laporan Keuangan Resmi / Standar SAK EP & EMKM (Print View & PDF)
+     */
+    public function cetakLaporan(Request $request)
+    {
+        $mode = $request->query('mode', 'single'); // 'single' atau 'komparatif'
+        $tanggalDari = $request->query('tanggal_dari', date('Y-m-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        // Default Komparatif: Periode Bulan Sebelumnya
+        $tanggalDariKomparatif = $request->query('tanggal_dari_komparatif', date('Y-m-01', strtotime('-1 month', strtotime($tanggalDari))));
+        $tanggalSampaiKomparatif = $request->query('tanggal_sampai_komparatif', date('Y-m-t', strtotime('-1 month', strtotime($tanggalDari))));
+
+        $dataUtama = $this->hitungDataKeuanganPeriodik($tanggalDari, $tanggalSampai);
+        $dataKomparatif = ($mode === 'komparatif') 
+            ? $this->hitungDataKeuanganPeriodik($tanggalDariKomparatif, $tanggalSampaiKomparatif) 
+            : null;
+
+        $perusahaan = Perusahaan::first();
+
+        return view('akuntansi.cetak-laporan', compact(
+            'mode',
+            'tanggalDari',
+            'tanggalSampai',
+            'tanggalDariKomparatif',
+            'tanggalSampaiKomparatif',
+            'dataUtama',
+            'dataKomparatif',
+            'perusahaan'
         ));
     }
 
