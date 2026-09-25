@@ -194,7 +194,7 @@
 
                         <div class="grid grid-cols-2 gap-3 pt-2">
                             <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-center">
-                                <div class="text-xl font-black text-amber-400">9 KBLI</div>
+                                <div class="text-xl font-black text-amber-400">4 KBLI</div>
                                 <div class="text-[10px] text-slate-400 mt-0.5">Bidang Usaha OSS Resmi</div>
                             </div>
                             <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-center">
@@ -274,14 +274,14 @@
                 </div>
             </div>
 
-            <!-- ─── PORTOFOLIO 9 KODE KBLI RESMI (LAMPIRAN NIB OSS BKPM) ─────────── -->
+            <!-- ─── PORTOFOLIO 4 KODE KBLI RESMI (LAMPIRAN NIB OSS BKPM) ─────────── -->
             <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-10 shadow-2xl backdrop-blur-md space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
                     <div>
                         <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Klasifikasi Baku Lapangan Usaha Indonesia (KBLI)</span>
                         <h3 class="text-lg font-black text-white mt-0.5 flex items-center gap-2">
                             <i class="fas fa-layer-group text-amber-400"></i>
-                            <span>9 Bidang Usaha Berizin Resmi PT Pinastika Bhakti Semesta</span>
+                            <span>4 Bidang Usaha Berizin Resmi PT Pinastika Bhakti Semesta</span>
                         </h3>
                     </div>
                     <span class="text-xs text-slate-400 font-mono">
@@ -289,88 +289,8 @@
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- KBLI 1: 38302 -->
-                    <div class="rounded-2xl border-2 border-amber-500/50 bg-slate-950/80 p-4 space-y-2 hover:border-amber-400 transition relative group">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-black font-mono">
-                                KBLI 38302
-                            </span>
-                            <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                                Sektor Utama RDF
-                            </span>
-                        </div>
-                        <h4 class="text-xs font-black text-white">Pemulihan Material Barang Bukan Logam</h4>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Pemilahan, pencacahan, pencucian, dan pengolahan sampah anorganik/plastik menjadi bahan baku daur ulang dan <strong>Refuse Derived Fuel (RDF)</strong>.
-                        </p>
-                    </div>
-
-                    <!-- KBLI 2: 38212 -->
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-black font-mono border border-emerald-500/30">
-                                KBLI 38212
-                            </span>
-                            <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                                Organik &amp; Kompos
-                            </span>
-                        </div>
-                        <h4 class="text-xs font-black text-white">Produksi Kompos Sampah Organik</h4>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Pengolahan sampah organik dan biomassa dari pasar dan TPST mitra menjadi pupuk kompos berkualitas dan media tanam.
-                        </p>
-                    </div>
-
-                    <!-- KBLI 3: 22299 -->
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-black font-mono border border-slate-700">
-                                KBLI 22299
-                            </span>
-                            <span class="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-                                Manufaktur
-                            </span>
-                        </div>
-                        <h4 class="text-xs font-black text-white">Industri Barang Plastik Lainnya Ytdl</h4>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Fabrikasi dan pencetakan produk plastik lanjutan berbasis biji plastik daur ulang hasil pengolahan CUGIL internal.
-                        </p>
-                    </div>
-
-                    <!-- KBLI 4: 22293 -->
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-black font-mono border border-slate-700">
-                                KBLI 22293
-                            </span>
-                            <span class="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-                                Peralatan Teknik
-                            </span>
-                        </div>
-                        <h4 class="text-xs font-black text-white">Industri Barang &amp; Peralatan Teknik Dari Plastik</h4>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Pembuatan komponen teknis, pallet plastik, wadah industri, dan suku cadang berbahan dasar polimer teknik.
-                        </p>
-                    </div>
-
-                    <!-- KBLI 5: 22292 -->
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-black font-mono border border-slate-700">
-                                KBLI 22292
-                            </span>
-                            <span class="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-                                Rumah Tangga
-                            </span>
-                        </div>
-                        <h4 class="text-xs font-black text-white">Industri Perlengkapan Rumah Tangga Dari Plastik</h4>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Produksi wadah, perabotan rumah tangga, tong sampah pilah, dan perlengkapan higienis berbasis plastik daur ulang.
-                        </p>
-                    </div>
-
-                    <!-- KBLI 6: 28199 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- KBLI 28199 -->
                     <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
                         <div class="flex items-center justify-between">
                             <span class="px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-black font-mono border border-amber-500/20">
@@ -380,13 +300,13 @@
                                 Engineering
                             </span>
                         </div>
-                        <h4 class="text-xs font-black text-white">Industri Mesin Untuk Keperluan Umum Lainnya</h4>
+                        <h4 class="text-xs font-black text-white">Industri Mesin Untuk Keperluan Umum Lainnya Ytdl</h4>
                         <p class="text-[11px] text-slate-400 leading-relaxed">
                             Perakitan konveyor, elevator bahan, saringan putar (<em>trommel screen</em>), blower, dan mesin penunjang umum pabrik.
                         </p>
                     </div>
 
-                    <!-- KBLI 7: 28299 -->
+                    <!-- KBLI 28299 -->
                     <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
                         <div class="flex items-center justify-between">
                             <span class="px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-black font-mono border border-amber-500/20">
@@ -402,35 +322,35 @@
                         </p>
                     </div>
 
-                    <!-- KBLI 8: 74111 -->
+                    <!-- KBLI 38212 -->
                     <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
                         <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-black font-mono border border-blue-500/20">
-                                KBLI 74111
+                            <span class="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-black font-mono border border-emerald-500/30">
+                                KBLI 38212
                             </span>
-                            <span class="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-                                Desain &amp; CAD
+                            <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                                Organik &amp; Kompos
                             </span>
                         </div>
-                        <h4 class="text-xs font-black text-white">Aktivitas Desain Alat Transportasi &amp; Permesinan</h4>
+                        <h4 class="text-xs font-black text-white">Produksi Kompos Sampah Organik</h4>
                         <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Jasa rekayasa teknik, perancangan skema mekanikal pengolahan limbah (Waste-to-Energy), dan rancang bangun mesin custom.
+                            Pengolahan sampah organik dan biomassa dari pasar dan TPST mitra menjadi pupuk kompos berkualitas dan media tanam.
                         </p>
                     </div>
 
-                    <!-- KBLI 9: 43291 -->
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-2 hover:border-amber-500/40 transition">
+                    <!-- KBLI 38302 -->
+                    <div class="rounded-2xl border-2 border-amber-500/50 bg-slate-950/80 p-4 space-y-2 hover:border-amber-400 transition relative group">
                         <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 text-xs font-black font-mono border border-purple-500/20">
-                                KBLI 43291
+                            <span class="px-2.5 py-0.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-black font-mono">
+                                KBLI 38302
                             </span>
-                            <span class="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                                Konstruksi &amp; Plant
+                            <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                Sektor Utama RDF
                             </span>
                         </div>
-                        <h4 class="text-xs font-black text-white">Instalasi Mekanikal</h4>
+                        <h4 class="text-xs font-black text-white">Pemulihan Material Barang Bukan Logam</h4>
                         <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Pemasangan, integrasi perpipaan, instalasi permesinan pengolahan sampah TPST, dan perawatan mekanikal pabrik industri.
+                            Pemilahan, pencacahan, pencucian, dan pengolahan sampah anorganik/plastik menjadi bahan baku daur ulang dan <strong>Refuse Derived Fuel (RDF)</strong>.
                         </p>
                     </div>
                 </div>
