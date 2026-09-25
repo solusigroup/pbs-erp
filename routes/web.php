@@ -128,6 +128,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/jurnal/{id}/approve', [AkuntansiController::class, 'approveJurnal'])->name('jurnal.approve');
         Route::put('/jurnal/{id}',         [AkuntansiController::class, 'updateJurnal'])->name('jurnal.update');
         Route::post('/jurnal/bulk-approve',[AkuntansiController::class, 'bulkApproveJurnal'])->name('jurnal.bulkApprove');
+        Route::post('/jurnal/adjust-hpp-cugil', [AkuntansiController::class, 'adjustHppCugil'])->name('jurnal.adjustHppCugil');
 
         // Hapus Jurnal & Rollback Saldo Buku Besar
         Route::delete('/jurnal/{id}',      [AkuntansiController::class, 'destroyJurnal'])->name('destroyJurnal');

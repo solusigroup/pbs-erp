@@ -820,118 +820,238 @@ class AkuntansiController extends Controller
         return back()->with('error', "Gagal melakukan bulk approve. Pastikan jurnal yang dipilih belum diposting.");
     }
 
-    /**
-     * Laporan Keuangan (Laba Rugi & Neraca)
-     */
-    public function laporan()
+    public function adjustHppCugil(Request $request, \App\Services\JurnalAutoService $jurnalService)
     {
-        $pendapatan = Akun::where('kategori', 'Pendapatan')->orderBy('kode_akun')->get();
-        $beban = Akun::where('kategori', 'Beban')->orderBy('kode_akun')->get();
+        $request->validate([
+            'tanggal' => 'nullable|date',
+            'deskripsi' => 'nullable|string|max:255'
+        ]);
 
-        $totalPendapatan = $pendapatan->sum('saldo_berjalan');
-        $totalBeban = $beban->sum('saldo_berjalan');
-        $labaBersih = $totalPendapatan - $totalBeban;
+        $res = $jurnalService->createJurnalPenyesuaianHppCugil($request->tanggal, $request->deskripsi);
 
-        $asetLancar = Akun::where('kategori', 'Aset Lancar')->orderBy('kode_akun')->get();
-        $asetTetap = Akun::where('kategori', 'Aset Tetap')->orderBy('kode_akun')->get();
-        $kewajiban = Akun::where('kategori', 'Kewajiban')->orderBy('kode_akun')->get();
-        $ekuitas = Akun::where('kategori', 'Ekuitas')->orderBy('kode_akun')->get();
+        if ($res['success']) {
+            return back()->with('success', $res['message']);
+        }
 
-        $totalAset = $asetLancar->sum('saldo_berjalan') + $asetTetap->sum('saldo_berjalan');
-        $totalKewajibanEkuitas = $kewajiban->sum('saldo_berjalan') + $ekuitas->sum('saldo_berjalan') + $labaBersih;
+        return back()->with('error', $res['message']);
+    }
+
+    /**
+     * Laporan Keuangan (Laba Rugi & Neraca - SAK EP/EMKM Single & Komparatif Periode)
+     */
+    public function laporan(Request $request)
+    {
+        $mode = $request->query('mode', 'single'); // 'single' atau 'komparatif'
+        $tanggalDari = $request->query('tanggal_dari', date('Y-m-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        // Default Komparatif: Periode Bulan Sebelumnya
+        $tanggalDariKomparatif = $request->query('tanggal_dari_komparatif', date('Y-m-01', strtotime('-1 month', strtotime($tanggalDari))));
+        $tanggalSampaiKomparatif = $request->query('tanggal_sampai_komparatif', date('Y-m-t', strtotime('-1 month', strtotime($tanggalDari))));
+
+        $dataUtama = $this->hitungDataKeuanganPeriodik($tanggalDari, $tanggalSampai);
+        $dataKomparatif = ($mode === 'komparatif') 
+            ? $this->hitungDataKeuanganPeriodik($tanggalDariKomparatif, $tanggalSampaiKomparatif) 
+            : null;
 
         return view('akuntansi.laporan', compact(
-            'pendapatan',
-            'beban',
-            'totalPendapatan',
-            'totalBeban',
-            'labaBersih',
-            'asetLancar',
-            'asetTetap',
-            'kewajiban',
-            'ekuitas',
-            'totalAset',
-            'totalKewajibanEkuitas'
+            'mode',
+            'tanggalDari',
+            'tanggalSampai',
+            'tanggalDariKomparatif',
+            'tanggalSampaiKomparatif',
+            'dataUtama',
+            'dataKomparatif'
         ));
     }
 
     /**
-     * Laporan Arus Kas (Cash Flow Statement - Direct SAK Method)
+     * Helper perhitungan saldo & mutasi keuangan periodik per SAK EP/EMKM
+     */
+    private function hitungDataKeuanganPeriodik($tglDari, $tglSampai)
+    {
+        // 1. Akun Laba Rugi (Pendapatan & Beban) -> Berdasarkan Mutasi Jurnal POSTED dalam Range [$tglDari, $tglSampai]
+        $pendapatanAkuns = Akun::where('kategori', 'Pendapatan')->orderBy('kode_akun')->get();
+        $bebanAkuns = Akun::where('kategori', 'Beban')->orderBy('kode_akun')->get();
+
+        $pendapatanData = [];
+        $totalPendapatan = 0;
+        foreach ($pendapatanAkuns as $p) {
+            $mutasi = JurnalDetail::where('kode_akun', $p->kode_akun)
+                ->whereHas('jurnal', function ($q) use ($tglDari, $tglSampai) {
+                    $q->where('is_posted', true)->whereBetween('tanggal', [$tglDari, $tglSampai]);
+                });
+            $totalMutasi = (float) $mutasi->sum('kredit') - (float) $mutasi->sum('debit');
+            $pendapatanData[$p->kode_akun] = [
+                'akun' => $p,
+                'nominal' => $totalMutasi
+            ];
+            $totalPendapatan += $totalMutasi;
+        }
+
+        $bebanData = [];
+        $totalBeban = 0;
+        foreach ($bebanAkuns as $b) {
+            $mutasi = JurnalDetail::where('kode_akun', $b->kode_akun)
+                ->whereHas('jurnal', function ($q) use ($tglDari, $tglSampai) {
+                    $q->where('is_posted', true)->whereBetween('tanggal', [$tglDari, $tglSampai]);
+                });
+            $totalMutasi = (float) $mutasi->sum('debit') - (float) $mutasi->sum('kredit');
+            $bebanData[$b->kode_akun] = [
+                'akun' => $b,
+                'nominal' => $totalMutasi
+            ];
+            $totalBeban += $totalMutasi;
+        }
+
+        $labaBersih = $totalPendapatan - $totalBeban;
+
+        // 2. Akun Neraca (Aset, Kewajiban, Ekuitas) -> Berdasarkan Saldo Akumulasi per $tglSampai
+        $asetLancarAkuns = Akun::where('kategori', 'Aset Lancar')->orderBy('kode_akun')->get();
+        $asetTetapAkuns = Akun::where('kategori', 'Aset Tetap')->orderBy('kode_akun')->get();
+        $kewajibanAkuns = Akun::where('kategori', 'Kewajiban')->orderBy('kode_akun')->get();
+        $ekuitasAkuns = Akun::where('kategori', 'Ekuitas')->orderBy('kode_akun')->get();
+
+        $hitungSaldoNeraca = function ($akunList, $isDebit) use ($tglSampai) {
+            $list = [];
+            $total = 0;
+            foreach ($akunList as $a) {
+                $mutasi = JurnalDetail::where('kode_akun', $a->kode_akun)
+                    ->whereHas('jurnal', function ($q) use ($tglSampai) {
+                        $q->where('is_posted', true)->where('tanggal', '<=', $tglSampai);
+                    });
+                
+                $totDebit = (float) $mutasi->sum('debit');
+                $totKredit = (float) $mutasi->sum('kredit');
+
+                if ($isDebit) {
+                    $saldo = (float) $a->saldo_awal + $totDebit - $totKredit;
+                } else {
+                    $saldo = (float) $a->saldo_awal + $totKredit - $totDebit;
+                }
+
+                $list[$a->kode_akun] = [
+                    'akun' => $a,
+                    'nominal' => $saldo
+                ];
+                $total += $saldo;
+            }
+            return [$list, $total];
+        };
+
+        list($asetLancarData, $totalAsetLancar) = $hitungSaldoNeraca($asetLancarAkuns, true);
+        list($asetTetapData, $totalAsetTetap) = $hitungSaldoNeraca($asetTetapAkuns, true);
+        list($kewajibanData, $totalKewajiban) = $hitungSaldoNeraca($kewajibanAkuns, false);
+        list($ekuitasData, $totalEkuitas) = $hitungSaldoNeraca($ekuitasAkuns, false);
+
+        // Laba Bersih Kumulatif per $tglSampai untuk penyeimbang Neraca
+        $pendapatanKumulatif = JurnalDetail::whereHas('akun', function($q){ $q->where('kategori', 'Pendapatan'); })
+            ->whereHas('jurnal', function($q) use ($tglSampai){ $q->where('is_posted', true)->where('tanggal', '<=', $tglSampai); });
+        $totPendK = (float)$pendapatanKumulatif->sum('kredit') - (float)$pendapatanKumulatif->sum('debit');
+
+        $bebanKumulatif = JurnalDetail::whereHas('akun', function($q){ $q->where('kategori', 'Beban'); })
+            ->whereHas('jurnal', function($q) use ($tglSampai){ $q->where('is_posted', true)->where('tanggal', '<=', $tglSampai); });
+        $totBebD = (float)$bebanKumulatif->sum('debit') - (float)$bebanKumulatif->sum('kredit');
+
+        $labaBersihKumulatif = $totPendK - $totBebD;
+
+        $totalAset = $totalAsetLancar + $totalAsetTetap;
+        $totalKewajibanEkuitas = $totalKewajiban + $totalEkuitas + $labaBersihKumulatif;
+
+        return [
+            'pendapatanData' => $pendapatanData,
+            'totalPendapatan' => $totalPendapatan,
+            'bebanData' => $bebanData,
+            'totalBeban' => $totalBeban,
+            'labaBersih' => $labaBersih,
+
+            'asetLancarData' => $asetLancarData,
+            'totalAsetLancar' => $totalAsetLancar,
+            'asetTetapData' => $asetTetapData,
+            'totalAsetTetap' => $totalAsetTetap,
+            'kewajibanData' => $kewajibanData,
+            'totalKewajiban' => $totalKewajiban,
+            'ekuitasData' => $ekuitasData,
+            'totalEkuitas' => $totalEkuitas,
+
+            'totalAset' => $totalAset,
+            'labaBersihKumulatif' => $labaBersihKumulatif,
+            'totalKewajibanEkuitas' => $totalKewajibanEkuitas
+        ];
+    }
+
+    /**
+     * Laporan Arus Kas (Cash Flow Statement - Direct SAK Method with Date Range)
      */
     public function arusKas(Request $request)
     {
-        $tahun = $request->query('tahun', date('Y'));
+        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+        
         $cashCodes = Akun::where('tipe_akun', 'Kas & Bank')->pluck('kode_akun')->toArray();
 
         // 1. Arus Kas dari Aktivitas Operasi
-        // Penerimaan dari Pelanggan & Penjualan (Kas Masuk dengan akun lawan Pendapatan 4-xxx atau Piutang 1-1300)
         $penerimaanPelanggan = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('debit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Masuk')
-                  ->whereYear('tanggal', $tahun);
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
             })
             ->sum('debit');
 
-        // Pembayaran Bahan Baku / HPP (Kas Keluar akun lawan 5-xxx atau Hutang 2-1100)
         $pembayaranHpp = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Keluar')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
-                      $dq->where('kode_akun', 'like', '5-%')->orWhere('kode_akun', '2-1100');
+                      $dq->where('kode_akun', 'like', '5-%')->orWhere('kode_akun', '2-1100')->orWhere('kode_akun', '1-1610');
                   });
             })
             ->sum('kredit');
 
-        // Pembayaran Gaji & Karyawan (Kas Keluar lawan 6-1100 atau 2-1200)
         $pembayaranGaji = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Keluar')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
                       $dq->where('kode_akun', '6-1100')->orWhere('kode_akun', '2-1200');
                   });
             })
             ->sum('kredit');
 
-        // Pembayaran Operasional Kantor, Utilitas & Transport (Kas Keluar lawan 6-1200, 6-1300, 6-1400)
         $pembayaranOperasional = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Keluar')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
                       $dq->whereIn('kode_akun', ['6-1200', '6-1300', '6-1400']);
                   });
             })
             ->sum('kredit');
 
-        // Pembayaran Pajak (Kas Keluar lawan 2-13xx atau 7-1100)
         $pembayaranPajak = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Keluar')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
                       $dq->where('kode_akun', 'like', '2-13%')->orWhere('kode_akun', '7-1100');
                   });
             })
             ->sum('kredit');
 
-        // Total Kas Bersih dari Aktivitas Operasi
         $totalPengeluaranOperasi = $pembayaranHpp + $pembayaranGaji + $pembayaranOperasional + $pembayaranPajak;
         $arusKasOperasi = $penerimaanPelanggan - $totalPengeluaranOperasi;
 
         // 2. Arus Kas dari Aktivitas Investasi
-        // Perolehan Aset Tetap (Kendaraan & Peralatan)
         $perolehanAset = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Keluar')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
                       $dq->whereIn('kode_akun', ['1-2100', '1-2200']);
                   });
@@ -941,12 +1061,11 @@ class AkuntansiController extends Controller
         $arusKasInvestasi = -$perolehanAset;
 
         // 3. Arus Kas dari Aktivitas Pendanaan
-        // Setoran Modal Saham
         $setoranModal = JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('debit', '>', 0)
-            ->whereHas('jurnal', function ($q) use ($tahun) {
-                $q->where('tipe_jurnal', 'Kas Masuk')
-                  ->whereYear('tanggal', $tahun)
+            ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
+                $q->where('is_posted', true)
+                  ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
                   ->whereHas('details', function ($dq) {
                       $dq->where('kode_akun', '3-1100');
                   });
@@ -955,14 +1074,23 @@ class AkuntansiController extends Controller
 
         $arusKasPendanaan = $setoranModal;
 
-        // 4. Rekapitulasi Kas & Setara Kas
         $kenaikanKasBersih = $arusKasOperasi + $arusKasInvestasi + $arusKasPendanaan;
+
+        // Saldo Kas per tanggal
+        $saldoAwalKas = (float) Akun::whereIn('kode_akun', $cashCodes)->sum('saldo_awal');
         
-        $saldoAwalKas = Akun::whereIn('kode_akun', $cashCodes)->sum('saldo_awal');
-        $saldoAkhirKas = Akun::whereIn('kode_akun', $cashCodes)->sum('saldo_berjalan');
+        $mutasiSebelumnya = JurnalDetail::whereIn('kode_akun', $cashCodes)
+            ->whereHas('jurnal', function($q) use ($tanggalDari) {
+                $q->where('is_posted', true)->where('tanggal', '<', $tanggalDari);
+            });
+        $totMutasiAwal = (float) $mutasiSebelumnya->sum('debit') - (float) $mutasiSebelumnya->sum('kredit');
+        $saldoAwalPeriode = $saldoAwalKas + $totMutasiAwal;
+
+        $saldoAkhirKas = $saldoAwalPeriode + $kenaikanKasBersih;
 
         return view('akuntansi.arus-kas', compact(
-            'tahun',
+            'tanggalDari',
+            'tanggalSampai',
             'penerimaanPelanggan',
             'pembayaranHpp',
             'pembayaranGaji',
@@ -976,6 +1104,7 @@ class AkuntansiController extends Controller
             'arusKasPendanaan',
             'kenaikanKasBersih',
             'saldoAwalKas',
+            'saldoAwalPeriode',
             'saldoAkhirKas'
         ));
     }

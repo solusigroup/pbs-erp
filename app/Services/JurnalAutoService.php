@@ -249,6 +249,65 @@ class JurnalAutoService
         return $this->createDraftJurnal($noTransaksi, $tanggal, 'Umum', $deskripsi, $refKey, $jumlahTerima, $jumlahTerima, $details);
     }
 
+    // ─── PENYESUAIAN HPP CUGIL AKHIR PERIODE (ZEROING PERSEDIAAN) ──────────────────
+
+    /**
+     * Buat jurnal penyesuaian akhir periode CUGIL.
+     * Mengubah saldo Persediaan Bahan Baku (1-1610) menjadi 0 dengan dialokasikan ke Beban Pokok Pendapatan (5-1100).
+     * 
+     * Dr. 5-1100 Beban Pokok Pendapatan (HPP) ... nominal_persediaan
+     *     Cr. 1-1610 Persediaan Bahan Baku ....... nominal_persediaan
+     */
+    public function createJurnalPenyesuaianHppCugil($tanggal = null, $deskripsi = null): array
+    {
+        return DB::transaction(function () use ($tanggal, $deskripsi) {
+            $tanggalObj = $tanggal ? Carbon::parse($tanggal) : Carbon::now();
+
+            // Lock akun Persediaan Bahan Baku (1-1610)
+            $akunPersediaan = Akun::where('kode_akun', '1-1610')->lockForUpdate()->first();
+            
+            if (!$akunPersediaan || (float) $akunPersediaan->saldo_berjalan <= 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Tidak ada saldo Persediaan Bahan Baku CUGIL (1-1610) yang perlu disesuaikan (Saldo = Rp 0).'
+                ];
+            }
+
+            $nominalAdjustment = (float) $akunPersediaan->saldo_berjalan;
+            $namaBulan = $tanggalObj->translatedFormat('F Y');
+            $refKey = 'AUTO-ADJUST-CUGIL-HPP-' . $tanggalObj->format('Ym') . '-' . time();
+            $noTransaksi = $this->generateNoTransaksi('JU-ADJ-HPP', $tanggalObj);
+
+            $deskripsiText = $deskripsi ?: "[AUTO-ADJUST CUGIL] Penyesuaian Beban Pokok (HPP) akhir periode {$namaBulan} - Zeroing Persediaan Bahan Baku";
+
+            $details = [
+                [
+                    'kode_akun' => '5-1100', // Beban Pokok Pendapatan (HPP)
+                    'keterangan_baris' => "Alokasi HPP CUGIL dari Persediaan Bahan Baku akhir periode {$namaBulan}",
+                    'debit' => $nominalAdjustment,
+                    'kredit' => 0,
+                ],
+                [
+                    'kode_akun' => '1-1610', // Persediaan Bahan Baku (CUGIL)
+                    'keterangan_baris' => "Zeroing Persediaan Bahan Baku CUGIL akhir periode {$namaBulan}",
+                    'debit' => 0,
+                    'kredit' => $nominalAdjustment,
+                ],
+            ];
+
+            $jurnal = $this->createDraftJurnal($noTransaksi, $tanggalObj, 'Penyesuaian', $deskripsiText, $refKey, $nominalAdjustment, $nominalAdjustment, $details);
+
+            // Auto-approve agar saldo Persediaan (1-1610) langsung menjadi 0 di akhir periode
+            $this->approveJurnal($jurnal);
+
+            return [
+                'success' => true,
+                'message' => "Berhasil membukukan Jurnal Penyesuaian HPP CUGIL [{$noTransaksi}] senilai Rp " . number_format($nominalAdjustment, 0, ',', '.') . ". Saldo Persediaan Bahan Baku CUGIL kini Rp 0.",
+                'jurnal' => $jurnal
+            ];
+        });
+    }
+
     // ─── APPROVAL (POST TO GL) ───────────────────────────────────────────────────
 
     /**
