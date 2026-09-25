@@ -460,12 +460,7 @@
                             </div>
 
                             <!-- DIREKTUR AKUNTANSI & UMUM -->
-                            <div class="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-center shadow-xl hover:border-amber-400 transition relative flex flex-col justify-between">
-                                <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-                                    <span class="bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow">
-                                        Akuntansi &amp; Umum
-                                    </span>
-                                </div>
+                            <div class="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-slate-900 to-slate-950 p-5 text-center shadow-xl hover:border-amber-400 transition flex flex-col justify-between">
                                 <div>
                                     <div class="h-11 w-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center mx-auto mb-3 font-black text-lg shadow-md shadow-amber-500/30">
                                         <i class="fas fa-scale-balanced"></i>
