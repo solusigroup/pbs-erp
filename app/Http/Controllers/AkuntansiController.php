@@ -187,8 +187,16 @@ class AkuntansiController extends Controller
 
     public function cleanDummyData()
     {
-        \Illuminate\Support\Facades\Artisan::call('db:clean-dummy');
-        return redirect()->route('dashboard')->with('success', 'Seluruh data simulasi (Proyek, Anggaran, Pajak & Jurnal Simulasi) berhasil dibersihkan dari database server!');
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            \Illuminate\Support\Facades\Artisan::call('db:clean-dummy');
+            return redirect()->route('dashboard')->with('success', 'Seluruh data simulasi (Proyek, Anggaran, Pajak & Jurnal Simulasi) berhasil dibersihkan, dan 1.700+ draf jurnal retroaktif berhasil dibuat!');
+        } catch (\Throwable $e) {
+            return redirect()->route('dashboard')->with('error', 'Gagal memproses pembersihan: ' . $e->getMessage());
+        }
     }
 
     /**

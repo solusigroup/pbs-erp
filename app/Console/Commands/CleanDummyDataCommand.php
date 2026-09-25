@@ -33,7 +33,25 @@ class CleanDummyDataCommand extends Command
      */
     public function handle()
     {
-        $this->info('Memulai pembersihan data simulasi...');
+        // 0. Pastikan Akun COA Persediaan terdaftar di DB
+        Akun::firstOrCreate(['kode_akun' => '1-1610'], [
+            'nama_akun' => 'Persediaan Bahan Baku (CUGIL)',
+            'kategori' => 'Aset Lancar',
+            'tipe_akun' => 'Persediaan',
+            'saldo_normal' => 'Debit',
+            'saldo_awal' => 0,
+            'saldo_berjalan' => 0,
+            'is_active' => true,
+        ]);
+        Akun::firstOrCreate(['kode_akun' => '1-1620'], [
+            'nama_akun' => 'Persediaan Barang Jadi (CUGIL)',
+            'kategori' => 'Aset Lancar',
+            'tipe_akun' => 'Persediaan',
+            'saldo_normal' => 'Debit',
+            'saldo_awal' => 0,
+            'saldo_berjalan' => 0,
+            'is_active' => true,
+        ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
