@@ -63,18 +63,39 @@ class LabaRugiPbsService
     {
         // ─── A. PENJUALAN ───────────────────────────────────────────────────────────
         
-        // A.1 Penjualan Jasa (Mutasi Kredit - Debit Akun 4-1200)
+        // Identifikasi transaksi penjualan JASA di cugil_sales (nama_barang/kode_barang JASA, ID *.jasa*, atau remark jasa)
+        $jasaSaleIds = DB::table('cugil_sales')
+            ->leftJoin('cugil_sale_items', 'cugil_sales.id', '=', 'cugil_sale_items.cugil_sale_id')
+            ->where(function($q) {
+                $q->where('cugil_sale_items.nama_barang', 'like', '%JASA%')
+                  ->orWhere('cugil_sale_items.kode_barang', 'like', '%JASA%')
+                  ->orWhere('cugil_sales.id_penjualan', 'like', '%.jasa%')
+                  ->orWhere('cugil_sales.remark', 'like', '%jasa cuci%')
+                  ->orWhere('cugil_sales.remark', 'like', '%jasa giling%');
+            })
+            ->pluck('cugil_sales.id')
+            ->unique()
+            ->toArray();
+
+        // A.1 Penjualan Jasa (Dari cugil_sales berunsur JASA + Mutasi Kredit - Debit Akun 4-1200)
+        $calcPenjualanJasaCugil = (float) CugilSale::whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
+            ->whereIn('id', $jasaSaleIds)
+            ->sum('total_bruto');
+
         $jasaMutasi = JurnalDetail::where('kode_akun', '4-1200')
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
             });
-        $calcPenjualanJasa = (float) $jasaMutasi->sum('kredit') - (float) $jasaMutasi->sum('debit');
+        $calcPenjualanJasaGL = (float) $jasaMutasi->sum('kredit') - (float) $jasaMutasi->sum('debit');
+        $calcPenjualanJasa = $calcPenjualanJasaCugil + max(0.0, $calcPenjualanJasaGL);
+
         $penjualanJasa = isset($overrides['penjualan_jasa']) && is_numeric($overrides['penjualan_jasa'])
             ? (float) $overrides['penjualan_jasa']
             : max(0.0, $calcPenjualanJasa);
 
-        // A.2 Penjualan Barang (Bruto dari cugil_sales.total_bruto)
+        // A.2 Penjualan Barang (Barang Jadi non-jasa dari cugil_sales)
         $calcPenjualanBarang = (float) CugilSale::whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
+            ->whereNotIn('id', $jasaSaleIds)
             ->sum('total_bruto');
         $penjualanBarang = isset($overrides['penjualan_barang']) && is_numeric($overrides['penjualan_barang'])
             ? (float) $overrides['penjualan_barang']
@@ -92,14 +113,23 @@ class LabaRugiPbsService
             ? (float) $overrides['diskon_penjualan']
             : max(0.0, $calcDiskonJual);
 
+        // Diskon Penjualan Barang dan Jasa
+        $diskonBarangOnly = (float) CugilSale::whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
+            ->whereNotIn('id', $jasaSaleIds)
+            ->sum('total_diskon');
+        $diskonJasaOnly = (float) CugilSale::whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
+            ->whereIn('id', $jasaSaleIds)
+            ->sum('total_diskon');
+
         // PENJUALAN BRUTO (Penjualan Jasa + Penjualan Barang)
         $penjualanBruto = $penjualanJasa + $penjualanBarang;
 
-        // A.4 Penjualan Barang Bersih (Penjualan Barang - Diskon Penjualan)
-        $penjualanBarangBersih = $penjualanBarang - $diskonPenjualan;
+        // A.4 Penjualan Barang Bersih (Penjualan Barang - Diskon Barang)
+        $penjualanBarangBersih = $penjualanBarang - $diskonBarangOnly;
 
-        // TOTAL PENJUALAN BERSIH (Penjualan Jasa + Penjualan Barang Bersih)
-        $totalPenjualanBersih = $penjualanJasa + $penjualanBarangBersih;
+        // TOTAL PENJUALAN BERSIH (Penjualan Jasa Bersih + Penjualan Barang Bersih)
+        $penjualanJasaBersih = $penjualanJasa - $diskonJasaOnly;
+        $totalPenjualanBersih = $penjualanJasaBersih + $penjualanBarangBersih;
 
 
         // ─── B. HARGA POKOK PENJUALAN ───────────────────────────────────────────────
