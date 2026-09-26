@@ -14,6 +14,7 @@ use App\Models\CugilSupplier;
 use App\Models\JurnalUmum;
 use App\Models\Perusahaan;
 use App\Models\TransaksiPajak;
+use App\Services\LabaRugiPbsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -479,6 +480,9 @@ class LaporanController extends Controller
     private function getKeuanganData(Request $request): array
     {
         $perusahaan = Perusahaan::first();
+        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
         $akuns = Akun::orderBy('kode_akun')->get();
 
         $akunPendapatan = $akuns->where('tipe_akun', 'Pendapatan');
@@ -512,8 +516,21 @@ class LaporanController extends Controller
         $totalModal = $akunModal->sum('saldo_berjalan');
         $totalKewajibanEkuitas = $totalHutang + $totalModal + $labaBersih;
 
+        // Laporan Laba Rugi Spesifik PBS (Manufaktur / Cuci Giling)
+        $labaRugiService = app(LabaRugiPbsService::class);
+        $overrides = $request->only([
+            'penjualan_jasa', 'penjualan_barang', 'diskon_penjualan',
+            'persediaan_awal_bj', 'persediaan_awal_bb', 'pembelian_bb',
+            'ongkos_angkut_pembelian', 'diskon_pembelian_bb', 'stock_akhir_bb',
+            'foh_btkl', 'foh_listrik', 'foh_maintenance',
+            'ongkos_angkut_penjualan', 'persediaan_akhir_bj', 'komisi_sales', 'komisi_lainnya',
+            'gaji_manajemen', 'biaya_administrasi_umum'
+        ]);
+        $labaRugiPbs = $labaRugiService->hitung($tanggalDari, $tanggalSampai, $overrides);
+
         return compact(
-            'perusahaan', 'akunPendapatan', 'totalPendapatan', 'akunHPP', 'totalHPP',
+            'perusahaan', 'tanggalDari', 'tanggalSampai', 'labaRugiPbs',
+            'akunPendapatan', 'totalPendapatan', 'akunHPP', 'totalHPP',
             'labaKotor', 'akunBeban', 'totalBeban', 'labaBersih', 'akunKasBank', 'totalKasBank',
             'akunPiutang', 'totalPiutang', 'akunPersediaan', 'totalPersediaan', 'akunAsetTetap',
             'totalAsetTetap', 'totalAset', 'akunHutang', 'totalHutang', 'akunModal', 'totalModal',
@@ -525,31 +542,55 @@ class LaporanController extends Controller
     {
         $data = $this->getKeuanganData($request);
         $fileName = 'laporan_keuangan_pbs_' . date('Ymd_His') . '.csv';
+        $d = $data['labaRugiPbs'];
 
-        return response()->streamDownload(function () use ($data) {
+        return response()->streamDownload(function () use ($data, $d) {
             $out = fopen('php://output', 'w');
             fputs($out, "\xEF\xBB\xBF");
 
-            fputcsv($out, ['LAPORAN KEUANGAN KORPORASI (LABA RUGI & NERACA) - PT PINASTIKA BHAKTI SEMESTA']);
+            fputcsv($out, ['LAPORAN KEUANGAN KORPORASI - PT PINASTIKA BHAKTI SEMESTA']);
+            fputcsv($out, ['Periode: ' . date('d/m/Y', strtotime($data['tanggalDari'])) . ' s/d ' . date('d/m/Y', strtotime($data['tanggalSampai']))]);
             fputcsv($out, ['Tanggal Cetak: ' . date('d F Y H:i:s')]);
             fputcsv($out, []);
 
-            // 1. Laba Rugi
-            fputcsv($out, ['=== I. LAPORAN LABA RUGI ===']);
-            fputcsv($out, ['Kode Akun', 'Nama Akun / Pos Rekening', 'Kategori Akun', 'Saldo Berjalan (Rp)']);
+            // 1. Laba Rugi Standar PBS
+            fputcsv($out, ['=== I. LAPORAN LABA RUGI PBS ===']);
+            fputcsv($out, ['No', 'Sub', 'Pos Rekening / Deskripsi Transaksi', 'Rincian (Rp)', 'Sub-Total (Rp)', 'Total (Rp)']);
+            fputcsv($out, ['A.', '', 'PENJUALAN', '', '', '']);
+            fputcsv($out, ['A.', '1.', 'Penjualan Jasa', $d['A1_penjualan_jasa'], '', '']);
+            fputcsv($out, ['A.', '2.', 'Penjualan Barang', $d['A2_penjualan_barang'], '', '']);
+            fputcsv($out, ['A.', '3.', 'Diskon Penjualan', -$d['A3_diskon_penjualan'], '', '']);
+            fputcsv($out, ['', '', 'PENJUALAN BRUTO', '', $d['penjualan_bruto'], '']);
+            fputcsv($out, ['A.', '4.', 'Penjualan Barang Bersih', '', $d['A4_penjualan_barang_bersih'], $d['total_penjualan_bersih']]);
+            fputcsv($out, []);
 
-            fputcsv($out, ['--- PENDAPATAN USAHA ---']);
-            foreach ($data['akunPendapatan'] as $p) {
-                fputcsv($out, [$p->kode_akun, $p->nama_akun, $p->tipe_akun, $p->saldo_berjalan]);
-            }
-            fputcsv($out, ['', 'TOTAL PENDAPATAN', '', $data['totalPendapatan']]);
-
-            fputcsv($out, ['--- BEBAN USAHA & OPERASIONAL ---']);
-            foreach ($data['akunBeban'] as $b) {
-                fputcsv($out, [$b->kode_akun, $b->nama_akun, $b->tipe_akun, $b->saldo_berjalan]);
-            }
-            fputcsv($out, ['', 'TOTAL BEBAN USAHA', '', $data['totalBeban']]);
-            fputcsv($out, ['', 'LABA BERSIH TAHUN BERJALAN', '', $data['labaBersih']]);
+            fputcsv($out, ['B.', '', 'HARGA POKOK PENJUALAN', '', '', '']);
+            fputcsv($out, ['B.', '1.', 'PERSEDIAAN AWAL BRNG JADI', $d['B1_persediaan_awal_bj'], '', '']);
+            fputcsv($out, ['B.', '2.', 'HRG POKOK PRODUKSI', '', '', '']);
+            fputcsv($out, ['B.', '2. a.', 'PERSEDIAAN AWAL BAHAN BAKU', $d['B2a_persediaan_awal_bb'], '', '']);
+            fputcsv($out, ['B.', '2. b.', 'PEMBELIAN BB', $d['B2b_pembelian_bb'], '', '']);
+            fputcsv($out, ['B.', '2. c.', 'ONGKOS ANGKUT PEMBELIAN+TIMBANG', $d['B2c_ongkos_angkut_pembelian'], '', '']);
+            fputcsv($out, ['B.', '2. d.', 'DISKON PEMBELIAN BB', -$d['B2d_diskon_pembelian_bb'], '', '']);
+            fputcsv($out, ['B.', '2. f.', 'TOTAL PEMBELIAN', '', $d['B2f_total_pembelian'], '']);
+            fputcsv($out, ['', '', '(-) STOCK AKHIR BB', -$d['stock_akhir_bb'], '', '']);
+            fputcsv($out, ['B.', '3.', 'FOH-BIAYA TENAGA KERJA LANGSUNG', $d['B3_foh_btkl'], '', '']);
+            fputcsv($out, ['B.', '4.', 'FOH-LISTRIK', $d['B4_foh_listrik'], '', '']);
+            fputcsv($out, ['B.', '5.', 'FOH-MAINTENANCE', $d['B5_foh_maintenance'], '', '']);
+            fputcsv($out, ['B.', '6.', 'TOTAL OVERHEAD PABRIK', '', $d['B6_total_overhead_pabrik'], '']);
+            fputcsv($out, ['B.', '7.', 'TOTAL HRG POKOK PRODUKSI', '', '', $d['B7_total_hrg_pokok_produksi']]);
+            fputcsv($out, ['B.', '8.', 'ONGKOS ANGKUT PENJUALAN', $d['B8_ongkos_angkut_penjualan'], '', '']);
+            fputcsv($out, ['B.', '9.', 'PERSEDIAAN AKHIR BRNG JADI', -$d['B9_persediaan_akhir_bj'], '', '']);
+            fputcsv($out, ['B.', '10.', 'KOMISI SALES (fee marketing)', $d['B10_komisi_sales'], '', '']);
+            fputcsv($out, ['B.', '11.', 'KOMISI LAINNYA (ongkos kuli,satpam)', $d['B11_komisi_lainnya'], '', '']);
+            fputcsv($out, ['B.', '12.', 'BIAYA PENJUALAN & STOK AKHIR', '', $d['B12_biaya_penjualan_stok_akhir'], '']);
+            fputcsv($out, ['C.', '', 'TOTAL HRG POKOK PENJUALAN [COGS]', '', '', $d['C_total_cogs']]);
+            fputcsv($out, []);
+            fputcsv($out, ['D.', '', 'LABA / RUGI BRUTO', '', '', $d['D_laba_rugi_bruto']]);
+            fputcsv($out, []);
+            fputcsv($out, ['E.', '', 'GAJI MANAJEMEN', '', $d['E_gaji_manajemen'], '']);
+            fputcsv($out, ['F.', '', 'BIAYA ADMINISTRASI DAN UMUM', '', $d['F_biaya_administrasi_umum'], '']);
+            fputcsv($out, []);
+            fputcsv($out, ['G.', '', 'NET INCOME (DEFISIT / RUGI)', '', '', $d['G_net_income']]);
             fputcsv($out, []);
 
             // 2. Neraca

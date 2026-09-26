@@ -138,6 +138,7 @@ Route::middleware(['auth'])->group(function () {
         // Laporan Keuangan (Laba Rugi & Neraca)
         Route::get('/laporan',             [AkuntansiController::class, 'laporan'])->name('laporan');
         Route::get('/laporan/cetak',       [AkuntansiController::class, 'cetakLaporan'])->name('laporan.cetak');
+        Route::get('/laporan/export-pbs',  [AkuntansiController::class, 'exportLabaRugiPbs'])->name('laporan.export-pbs');
 
         // Laporan Arus Kas Direct Method
         Route::get('/arus-kas',            [AkuntansiController::class, 'arusKas'])->name('arus-kas');

@@ -190,276 +190,53 @@
             </p>
         </div>
 
-        <!-- 3. RINGKASAN EKSEKUTIF (4 KPI UTAMA) -->
+        <!-- 3. RINGKASAN EKSEKUTIF (4 KPI UTAMA PBS) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 mb-4">
-            <div class="border border-slate-300 rounded-xl p-3 bg-slate-50/70 text-center">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Pendapatan</span>
-                <strong class="text-sm font-mono text-emerald-700 font-bold block mt-0.5">
-                    Rp {{ number_format($dataUtama['totalPendapatan'], 0, ',', '.') }}
+            <div class="border border-slate-300 rounded-xl p-2.5 bg-slate-50/70 text-center">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Penjualan Bersih (A.4)</span>
+                <strong class="text-sm font-mono text-emerald-800 font-bold block mt-0.5">
+                    Rp {{ number_format($labaRugiPbs['total_penjualan_bersih'], 0, ',', '.') }}
                 </strong>
             </div>
 
-            <div class="border border-slate-300 rounded-xl p-3 bg-slate-50/70 text-center">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Beban Usaha</span>
-                <strong class="text-sm font-mono text-rose-700 font-bold block mt-0.5">
-                    Rp {{ number_format($dataUtama['totalBeban'], 0, ',', '.') }}
+            <div class="border border-slate-300 rounded-xl p-2.5 bg-slate-50/70 text-center">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total HPP [COGS] (C)</span>
+                <strong class="text-sm font-mono text-rose-800 font-bold block mt-0.5">
+                    Rp {{ number_format($labaRugiPbs['C_total_cogs'], 0, ',', '.') }}
                 </strong>
             </div>
 
-            <div class="border border-slate-300 rounded-xl p-3 bg-slate-50/70 text-center">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Laba (Rugi) Berjalan</span>
-                <strong class="text-sm font-mono font-bold block mt-0.5 {{ $dataUtama['labaBersih'] >= 0 ? 'text-emerald-800' : 'text-rose-800' }}">
-                    @if($dataUtama['labaBersih'] < 0)
-                        (Rp {{ number_format(abs($dataUtama['labaBersih']), 0, ',', '.') }})
-                    @else
-                        Rp {{ number_format($dataUtama['labaBersih'], 0, ',', '.') }}
-                    @endif
+            <div class="border border-slate-300 rounded-xl p-2.5 bg-slate-50/70 text-center">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Laba / Rugi Bruto (D)</span>
+                <strong class="text-sm font-mono font-bold block mt-0.5 {{ $labaRugiPbs['is_laba_bruto'] ? 'text-emerald-800' : 'text-rose-800' }}">
+                    Rp {{ number_format($labaRugiPbs['D_laba_rugi_bruto'], 0, ',', '.') }}
                 </strong>
             </div>
 
-            <div class="border border-slate-900 rounded-xl p-3 bg-slate-100 text-center">
-                <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">Total Aset (Aktiva)</span>
-                <strong class="text-sm font-mono text-slate-950 font-black block mt-0.5">
-                    Rp {{ number_format($dataUtama['totalAset'], 0, ',', '.') }}
+            <div class="border border-slate-900 rounded-xl p-2.5 bg-slate-100 text-center">
+                <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">Net Income (G)</span>
+                <strong class="text-sm font-mono text-slate-950 font-black block mt-0.5 {{ $labaRugiPbs['is_net_laba'] ? 'text-emerald-900' : 'text-rose-700' }}">
+                    Rp {{ number_format($labaRugiPbs['G_net_income'], 0, ',', '.') }}
                 </strong>
             </div>
         </div>
 
-        <!-- ================= BAGIAN I: LAPORAN LABA RUGI ================= -->
+        <!-- ================= BAGIAN I: LAPORAN LABA RUGI STANDAR PBS ================= -->
         <section class="mb-8 break-inside-avoid">
             <div class="bg-slate-900 text-white px-3.5 py-1.5 rounded-t-lg flex items-center justify-between font-bold text-xs uppercase tracking-wider">
                 <div class="flex items-center gap-2">
-                    <i class="fas fa-chart-line text-amber-400"></i>
-                    <span>I. LAPORAN LABA RUGI KOMPREHENSIF</span>
+                    <i class="fas fa-file-invoice-dollar text-amber-400"></i>
+                    <span>I. LAPORAN LABA RUGI OPERASIONAL (STANDAR KHUSUS PBS)</span>
                 </div>
                 <span class="text-[10px] font-normal text-slate-300 normal-case font-mono">
                     {{ \Carbon\Carbon::parse($tanggalDari)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($tanggalSampai)->format('d/m/Y') }}
+                    @if($mode === 'komparatif')
+                        vs {{ \Carbon\Carbon::parse($tanggalDariKomparatif)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($tanggalSampaiKomparatif)->format('d/m/Y') }}
+                    @endif
                 </span>
             </div>
 
-            @if($mode === 'komparatif')
-                <!-- TABEL LABA RUGI KOMPARATIF -->
-                <table class="w-full text-xs border-collapse border border-slate-300">
-                    <thead>
-                        <tr class="bg-slate-100 text-slate-900 font-bold border-b border-slate-300 text-[11px]">
-                            <th class="py-2 px-3 border border-slate-300 text-left w-20">Kode</th>
-                            <th class="py-2 px-3 border border-slate-300 text-left">Nama Akun / Pos Rekening</th>
-                            <th class="py-2 px-3 border border-slate-300 text-right w-36">Periode Utama</th>
-                            <th class="py-2 px-3 border border-slate-300 text-right w-36">Pembanding</th>
-                            <th class="py-2 px-3 border border-slate-300 text-right w-32">Selisih (Rp)</th>
-                            <th class="py-2 px-3 border border-slate-300 text-right w-16">%</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 1. Pendapatan Usaha -->
-                        <tr class="bg-slate-100/70 font-bold text-slate-900">
-                            <td colspan="6" class="py-1.5 px-3 border border-slate-300 uppercase tracking-wide">
-                                1. PENDAPATAN USAHA (REVENUE)
-                            </td>
-                        </tr>
-                        @forelse($dataUtama['pendapatanData'] as $kode => $item)
-                            @php
-                                $nomUtama = (float)$item['nominal'];
-                                $nomKomp = (float)($dataKomparatif['pendapatanData'][$kode]['nominal'] ?? 0);
-                                $selisih = $nomUtama - $nomKomp;
-                                $persen = $nomKomp != 0 ? ($selisih / abs($nomKomp)) * 100 : ($nomUtama != 0 ? 100 : 0);
-                            @endphp
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-1.5 px-3 border border-slate-300 font-mono text-slate-600">{{ $item['akun']->kode_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 pl-6 text-slate-800">{{ $item['akun']->nama_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-900 font-medium">
-                                    {{ number_format($nomUtama, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-600">
-                                    {{ number_format($nomKomp, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono {{ $selisih >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                    {{ $selisih >= 0 ? '+' : '' }}{{ number_format($selisih, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-[10px] {{ $persen >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                    {{ $persen >= 0 ? '+' : '' }}{{ number_format($persen, 1, ',', '.') }}%
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="py-2 px-3 border border-slate-300 text-slate-400 italic text-center">Tidak ada pos pendapatan usaha.</td>
-                            </tr>
-                        @endforelse
-                        @php
-                            $totPendUtama = (float)$dataUtama['totalPendapatan'];
-                            $totPendKomp = (float)$dataKomparatif['totalPendapatan'];
-                            $selisihPend = $totPendUtama - $totPendKomp;
-                            $persenPend = $totPendKomp != 0 ? ($selisihPend / abs($totPendKomp)) * 100 : 0;
-                        @endphp
-                        <tr class="font-bold bg-slate-100 border-t border-b-2 border-slate-400 text-slate-900">
-                            <td colspan="2" class="py-2 px-3 border border-slate-300 text-right uppercase">TOTAL PENDAPATAN USAHA:</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-emerald-800">Rp {{ number_format($totPendUtama, 0, ',', '.') }}</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-slate-700">Rp {{ number_format($totPendKomp, 0, ',', '.') }}</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono {{ $selisihPend >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                {{ $selisihPend >= 0 ? '+' : '' }}{{ number_format($selisihPend, 0, ',', '.') }}
-                            </td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-[10px] {{ $persenPend >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                {{ $persenPend >= 0 ? '+' : '' }}{{ number_format($persenPend, 1, ',', '.') }}%
-                            </td>
-                        </tr>
-
-                        <!-- 2. Beban Usaha & Pokok -->
-                        <tr class="bg-slate-100/70 font-bold text-slate-900">
-                            <td colspan="6" class="py-1.5 px-3 border border-slate-300 uppercase tracking-wide">
-                                2. BEBAN POKOK &amp; OPERASIONAL (EXPENSES)
-                            </td>
-                        </tr>
-                        @forelse($dataUtama['bebanData'] as $kode => $item)
-                            @php
-                                $nomUtama = (float)$item['nominal'];
-                                $nomKomp = (float)($dataKomparatif['bebanData'][$kode]['nominal'] ?? 0);
-                                $selisih = $nomUtama - $nomKomp;
-                                $persen = $nomKomp != 0 ? ($selisih / abs($nomKomp)) * 100 : ($nomUtama != 0 ? 100 : 0);
-                            @endphp
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-1.5 px-3 border border-slate-300 font-mono text-slate-600">{{ $item['akun']->kode_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 pl-6 text-slate-800">{{ $item['akun']->nama_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-900 font-medium">
-                                    {{ number_format($nomUtama, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-600">
-                                    {{ number_format($nomKomp, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono {{ $selisih <= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                    {{ $selisih >= 0 ? '+' : '' }}{{ number_format($selisih, 0, ',', '.') }}
-                                </td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-[10px] {{ $persen <= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                    {{ $persen >= 0 ? '+' : '' }}{{ number_format($persen, 1, ',', '.') }}%
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="py-2 px-3 border border-slate-300 text-slate-400 italic text-center">Tidak ada pos beban usaha.</td>
-                            </tr>
-                        @endforelse
-                        @php
-                            $totBebUtama = (float)$dataUtama['totalBeban'];
-                            $totBebKomp = (float)$dataKomparatif['totalBeban'];
-                            $selisihBeb = $totBebUtama - $totBebKomp;
-                            $persenBeb = $totBebKomp != 0 ? ($selisihBeb / abs($totBebKomp)) * 100 : 0;
-                        @endphp
-                        <tr class="font-bold bg-slate-100 border-t border-b-2 border-slate-400 text-slate-900">
-                            <td colspan="2" class="py-2 px-3 border border-slate-300 text-right uppercase">TOTAL BEBAN USAHA:</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-rose-800">Rp {{ number_format($totBebUtama, 0, ',', '.') }}</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-slate-700">Rp {{ number_format($totBebKomp, 0, ',', '.') }}</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono {{ $selisihBeb <= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                {{ $selisihBeb >= 0 ? '+' : '' }}{{ number_format($selisihBeb, 0, ',', '.') }}
-                            </td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-[10px] {{ $persenBeb <= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                                {{ $persenBeb >= 0 ? '+' : '' }}{{ number_format($persenBeb, 1, ',', '.') }}%
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        @php
-                            $labaUtama = (float)$dataUtama['labaBersih'];
-                            $labaKomp = (float)$dataKomparatif['labaBersih'];
-                            $selisihLaba = $labaUtama - $labaKomp;
-                            $persenLaba = $labaKomp != 0 ? ($selisihLaba / abs($labaKomp)) * 100 : 0;
-                        @endphp
-                        <tr class="bg-slate-900 text-white font-black text-xs double-border-top-bottom">
-                            <td colspan="2" class="py-2.5 px-3 uppercase tracking-wider text-right">
-                                LABA (RUGI) BERSIH PERIODE BERJALAN:
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-sm text-amber-300">
-                                {{ $labaUtama < 0 ? '(Rp ' . number_format(abs($labaUtama), 0, ',', '.') . ')' : 'Rp ' . number_format($labaUtama, 0, ',', '.') }}
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-sm text-slate-300">
-                                {{ $labaKomp < 0 ? '(Rp ' . number_format(abs($labaKomp), 0, ',', '.') . ')' : 'Rp ' . number_format($labaKomp, 0, ',', '.') }}
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-xs {{ $selisihLaba >= 0 ? 'text-emerald-300' : 'text-rose-300' }}">
-                                {{ $selisihLaba >= 0 ? '+' : '' }}{{ number_format($selisihLaba, 0, ',', '.') }}
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-[10px] {{ $persenLaba >= 0 ? 'text-emerald-300' : 'text-rose-300' }}">
-                                {{ $persenLaba >= 0 ? '+' : '' }}{{ number_format($persenLaba, 1, ',', '.') }}%
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            @else
-                <!-- TABEL LABA RUGI SINGLE PERIODE -->
-                <table class="w-full text-xs border-collapse border border-slate-300">
-                    <thead>
-                        <tr class="bg-slate-100 text-slate-900 font-bold border-b border-slate-300 text-[11px]">
-                            <th class="py-2 px-3 border border-slate-300 text-left w-24">Kode Akun</th>
-                            <th class="py-2 px-3 border border-slate-300 text-left">Pos Rekening / Nama Akun</th>
-                            <th class="py-2 px-3 border border-slate-300 text-right w-48">Nominal (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 1. Pendapatan Usaha -->
-                        <tr class="bg-slate-100/70 font-bold text-slate-900">
-                            <td colspan="3" class="py-1.5 px-3 border border-slate-300 uppercase tracking-wide">
-                                1. PENDAPATAN USAHA (REVENUE)
-                            </td>
-                        </tr>
-                        @forelse($dataUtama['pendapatanData'] as $kode => $item)
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-1.5 px-3 border border-slate-300 font-mono text-slate-600">{{ $item['akun']->kode_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 pl-6 text-slate-800">{{ $item['akun']->nama_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-900 font-medium">
-                                    {{ number_format($item['nominal'], 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="py-2 px-3 border border-slate-300 text-slate-400 italic text-center">Tidak ada pos pendapatan usaha.</td>
-                            </tr>
-                        @endforelse
-                        <tr class="font-bold bg-slate-100 border-t border-b-2 border-slate-400 text-slate-900">
-                            <td colspan="2" class="py-2 px-3 border border-slate-300 text-right uppercase">TOTAL PENDAPATAN USAHA:</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-emerald-800 text-sm">
-                                Rp {{ number_format($dataUtama['totalPendapatan'], 0, ',', '.') }}
-                            </td>
-                        </tr>
-
-                        <!-- 2. Beban Pokok & Operasional -->
-                        <tr class="bg-slate-100/70 font-bold text-slate-900">
-                            <td colspan="3" class="py-1.5 px-3 border border-slate-300 uppercase tracking-wide">
-                                2. BEBAN POKOK &amp; OPERASIONAL (EXPENSES)
-                            </td>
-                        </tr>
-                        @forelse($dataUtama['bebanData'] as $kode => $item)
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-1.5 px-3 border border-slate-300 font-mono text-slate-600">{{ $item['akun']->kode_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 pl-6 text-slate-800">{{ $item['akun']->nama_akun }}</td>
-                                <td class="py-1.5 px-3 border border-slate-300 text-right font-mono text-slate-900 font-medium">
-                                    {{ number_format($item['nominal'], 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="py-2 px-3 border border-slate-300 text-slate-400 italic text-center">Tidak ada pos beban usaha.</td>
-                            </tr>
-                        @endforelse
-                        <tr class="font-bold bg-slate-100 border-t border-b-2 border-slate-400 text-slate-900">
-                            <td colspan="2" class="py-2 px-3 border border-slate-300 text-right uppercase">TOTAL BEBAN USAHA &amp; POKOK:</td>
-                            <td class="py-2 px-3 border border-slate-300 text-right font-mono text-rose-800 text-sm">
-                                Rp {{ number_format($dataUtama['totalBeban'], 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-slate-900 text-white font-black text-xs double-border-top-bottom">
-                            <td colspan="2" class="py-2.5 px-3 uppercase tracking-wider text-right">
-                                LABA (RUGI) BERSIH PERIODE BERJALAN:
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-sm text-amber-300">
-                                @if($dataUtama['labaBersih'] < 0)
-                                    (Rp {{ number_format(abs($dataUtama['labaBersih']), 0, ',', '.') }})
-                                @else
-                                    Rp {{ number_format($dataUtama['labaBersih'], 0, ',', '.') }}
-                                @endif
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            @endif
+            @include('akuntansi.partials.laba_rugi_pbs_print_table')
         </section>
 
         <!-- ================= BAGIAN II: LAPORAN POSISI KEUANGAN (NERACA) ================= -->

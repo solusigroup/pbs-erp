@@ -104,6 +104,10 @@
                 </button>
             </form>
             @endif
+            <a href="{{ route('akuntansi.laporan.export-pbs', request()->query()) }}" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20" title="Export Laporan Laba Rugi Format Standar PBS ke File CSV / Excel">
+                <i class="fas fa-file-excel text-emerald-200"></i>
+                <span>Export Excel / CSV PBS</span>
+            </a>
             <a href="{{ route('akuntansi.laporan.cetak', request()->query()) }}" target="_blank" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/25" title="Buka Dokumen Cetak Resmi A4 & Simpan PDF">
                 <i class="fas fa-print"></i>
                 <span>Cetak Laporan Resmi / PDF</span>
@@ -175,7 +179,158 @@
         </form>
     </div>
 
-    <!-- Tampilan Laporan Keuangan -->
+    <!-- ========================================================================= -->
+    <!-- LAPORAN LABA RUGI PBS (FORMAT STANDAR OPERASIONAL CUGIL & MANUFAKTUR)     -->
+    <!-- ========================================================================= -->
+    <div class="rounded-3xl border-2 border-amber-500/40 bg-slate-900/80 p-6 shadow-2xl space-y-6 print-card">
+        <div class="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        Format Standar PBS
+                    </span>
+                    <h2 class="text-lg font-black text-white tracking-wide flex items-center gap-2">
+                        <i class="fas fa-file-invoice-dollar text-amber-400"></i>
+                        <span>Laporan Laba Rugi Operasional Cuci Giling (PBS)</span>
+                    </h2>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                    Struktur Resmi PBS: Penjualan Bersih, HPP Produksi, FOH Pabrik, Biaya Penjualan, Laba Bruto, Operasional, Net Income (A s/d G)
+                    &bull; Periode: <span class="font-mono text-amber-300 font-semibold">{{ \Carbon\Carbon::parse($tanggalDari)->format('d/m/Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSampai)->format('d/m/Y') }}</span>
+                    @if($mode === 'komparatif')
+                        <span class="text-slate-400 ml-1">vs <span class="font-mono text-amber-300 font-semibold">{{ \Carbon\Carbon::parse($tanggalDariKomparatif)->format('d/m/Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSampaiKomparatif)->format('d/m/Y') }}</span></span>
+                    @endif
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-2 no-print">
+                <button type="button" onclick="document.getElementById('manualAdjustmentPanel').classList.toggle('hidden')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-2" title="Sesuaikan nilai manual seperti FOH atau Stock Opname Fisik">
+                    <i class="fas fa-sliders text-amber-400"></i>
+                    <span>Penyesuaian Angka / Simulasi</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Summary Badges PBS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Penjualan Bersih (A.4)</span>
+                    <strong class="text-base font-black text-emerald-400 font-mono block mt-0.5">
+                        Rp {{ number_format($labaRugiPbs['total_penjualan_bersih'], 0, ',', '.') }}
+                    </strong>
+                </div>
+                <div class="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                    <i class="fas fa-cart-shopping"></i>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total HPP [COGS] (C)</span>
+                    <strong class="text-base font-black text-rose-400 font-mono block mt-0.5">
+                        Rp {{ number_format($labaRugiPbs['C_total_cogs'], 0, ',', '.') }}
+                    </strong>
+                </div>
+                <div class="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">
+                    <i class="fas fa-industry"></i>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Laba / Rugi Bruto (D)</span>
+                    <strong class="text-base font-black font-mono block mt-0.5 {{ $labaRugiPbs['is_laba_bruto'] ? 'text-emerald-400' : 'text-rose-500' }}">
+                        Rp {{ number_format($labaRugiPbs['D_laba_rugi_bruto'], 0, ',', '.') }}
+                    </strong>
+                </div>
+                <div class="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
+                    <i class="fas fa-scale-balanced"></i>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/20 via-slate-950/60 to-slate-950 border border-amber-500/40 flex items-center justify-between shadow-lg">
+                <div>
+                    <span class="text-[10px] text-amber-400 uppercase font-black tracking-wider block">Net Income (G)</span>
+                    <strong class="text-base font-black font-mono block mt-0.5 {{ $labaRugiPbs['is_net_laba'] ? 'text-emerald-400' : 'text-rose-500' }}">
+                        Rp {{ number_format($labaRugiPbs['G_net_income'], 0, ',', '.') }}
+                    </strong>
+                </div>
+                <div class="h-9 w-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-sm">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Manual Adjustments / Overrides Panel -->
+        <div id="manualAdjustmentPanel" class="hidden p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 no-print">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <i class="fas fa-sliders"></i>
+                    <span>Parameter Penyesuaian Angka / Simulasi Nilai (Overrides)</span>
+                </span>
+                <span class="text-[11px] text-slate-500">Kosongkan kolom untuk menggunakan nilai otomatis dari database</span>
+            </div>
+            <form method="GET" action="{{ route('akuntansi.laporan') }}" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <input type="hidden" name="mode" value="{{ $mode }}">
+                <input type="hidden" name="tanggal_dari" value="{{ $tanggalDari }}">
+                <input type="hidden" name="tanggal_sampai" value="{{ $tanggalSampai }}">
+                @if($mode === 'komparatif')
+                <input type="hidden" name="tanggal_dari_komparatif" value="{{ $tanggalDariKomparatif }}">
+                <input type="hidden" name="tanggal_sampai_komparatif" value="{{ $tanggalSampaiKomparatif }}">
+                @endif
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Stock Akhir BB (Rp)</label>
+                    <input type="number" step="0.01" name="stock_akhir_bb" value="{{ request('stock_akhir_bb') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">FOH BTKL (Rp)</label>
+                    <input type="number" step="0.01" name="foh_btkl" value="{{ request('foh_btkl') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">FOH Listrik (Rp)</label>
+                    <input type="number" step="0.01" name="foh_listrik" value="{{ request('foh_listrik') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">FOH Maintenance (Rp)</label>
+                    <input type="number" step="0.01" name="foh_maintenance" value="{{ request('foh_maintenance') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Stok Akhir BJ (Rp)</label>
+                    <input type="number" step="0.01" name="persediaan_akhir_bj" value="{{ request('persediaan_akhir_bj') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Gaji Manajemen (Rp)</label>
+                    <input type="number" step="0.01" name="gaji_manajemen" value="{{ request('gaji_manajemen') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Biaya Admin & Umum (Rp)</label>
+                    <input type="number" step="0.01" name="biaya_administrasi_umum" value="{{ request('biaya_administrasi_umum') }}" placeholder="Otomatis" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono">
+                </div>
+
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-black transition text-xs flex-1">
+                        Terapkan
+                    </button>
+                    <a href="{{ route('akuntansi.laporan', ['mode' => $mode, 'tanggal_dari' => $tanggalDari, 'tanggal_sampai' => $tanggalSampai]) }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabel Resmi Format PBS -->
+        @include('akuntansi.partials.laba_rugi_pbs_table')
+    </div>
+
+    <!-- Tampilan Laporan SAK EMKM & Neraca Saldo -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 print:block print:space-y-6">
 
         <!-- 1. LAPORAN LABA RUGI -->

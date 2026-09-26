@@ -8,6 +8,7 @@ use App\Models\JurnalDetail;
 use App\Models\JurnalUmum;
 use App\Models\Perusahaan;
 use App\Services\KasImportService;
+use App\Services\LabaRugiPbsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1002,6 +1003,22 @@ class AkuntansiController extends Controller
             ? $this->hitungDataKeuanganPeriodik($tanggalDariKomparatif, $tanggalSampaiKomparatif) 
             : null;
 
+        // Laba Rugi Format Standar Manufaktur PBS (A - G)
+        $labaRugiService = app(LabaRugiPbsService::class);
+        $overrides = $request->only([
+            'penjualan_jasa', 'penjualan_barang', 'diskon_penjualan',
+            'persediaan_awal_bj', 'persediaan_awal_bb', 'pembelian_bb',
+            'ongkos_angkut_pembelian', 'diskon_pembelian_bb', 'stock_akhir_bb',
+            'foh_btkl', 'foh_listrik', 'foh_maintenance',
+            'ongkos_angkut_penjualan', 'persediaan_akhir_bj', 'komisi_sales', 'komisi_lainnya',
+            'gaji_manajemen', 'biaya_administrasi_umum'
+        ]);
+
+        $labaRugiPbs = $labaRugiService->hitung($tanggalDari, $tanggalSampai, $overrides);
+        $labaRugiPbsKomparatif = ($mode === 'komparatif')
+            ? $labaRugiService->hitung($tanggalDariKomparatif, $tanggalSampaiKomparatif)
+            : null;
+
         $perusahaan = Perusahaan::first();
 
         return view('akuntansi.laporan', compact(
@@ -1012,6 +1029,8 @@ class AkuntansiController extends Controller
             'tanggalSampaiKomparatif',
             'dataUtama',
             'dataKomparatif',
+            'labaRugiPbs',
+            'labaRugiPbsKomparatif',
             'perusahaan'
         ));
     }
@@ -1034,6 +1053,22 @@ class AkuntansiController extends Controller
             ? $this->hitungDataKeuanganPeriodik($tanggalDariKomparatif, $tanggalSampaiKomparatif) 
             : null;
 
+        // Laba Rugi Format Standar Manufaktur PBS (A - G)
+        $labaRugiService = app(LabaRugiPbsService::class);
+        $overrides = $request->only([
+            'penjualan_jasa', 'penjualan_barang', 'diskon_penjualan',
+            'persediaan_awal_bj', 'persediaan_awal_bb', 'pembelian_bb',
+            'ongkos_angkut_pembelian', 'diskon_pembelian_bb', 'stock_akhir_bb',
+            'foh_btkl', 'foh_listrik', 'foh_maintenance',
+            'ongkos_angkut_penjualan', 'persediaan_akhir_bj', 'komisi_sales', 'komisi_lainnya',
+            'gaji_manajemen', 'biaya_administrasi_umum'
+        ]);
+
+        $labaRugiPbs = $labaRugiService->hitung($tanggalDari, $tanggalSampai, $overrides);
+        $labaRugiPbsKomparatif = ($mode === 'komparatif')
+            ? $labaRugiService->hitung($tanggalDariKomparatif, $tanggalSampaiKomparatif)
+            : null;
+
         $perusahaan = Perusahaan::first();
 
         return view('akuntansi.cetak-laporan', compact(
@@ -1044,8 +1079,90 @@ class AkuntansiController extends Controller
             'tanggalSampaiKomparatif',
             'dataUtama',
             'dataKomparatif',
+            'labaRugiPbs',
+            'labaRugiPbsKomparatif',
             'perusahaan'
         ));
+    }
+
+    /**
+     * Export Laporan Laba Rugi PBS ke File CSV / Excel
+     */
+    public function exportLabaRugiPbs(Request $request): StreamedResponse
+    {
+        $tanggalDari = $request->query('tanggal_dari', date('Y-m-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        $labaRugiService = app(LabaRugiPbsService::class);
+        $overrides = $request->only([
+            'penjualan_jasa', 'penjualan_barang', 'diskon_penjualan',
+            'persediaan_awal_bj', 'persediaan_awal_bb', 'pembelian_bb',
+            'ongkos_angkut_pembelian', 'diskon_pembelian_bb', 'stock_akhir_bb',
+            'foh_btkl', 'foh_listrik', 'foh_maintenance',
+            'ongkos_angkut_penjualan', 'persediaan_akhir_bj', 'komisi_sales', 'komisi_lainnya',
+            'gaji_manajemen', 'biaya_administrasi_umum'
+        ]);
+
+        $d = $labaRugiService->hitung($tanggalDari, $tanggalSampai, $overrides);
+        $perusahaan = Perusahaan::first();
+        $fileName = 'laporan_laba_rugi_pbs_' . date('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($d, $perusahaan, $tanggalDari, $tanggalSampai) {
+            $out = fopen('php://output', 'w');
+            fputs($out, "\xEF\xBB\xBF"); // UTF-8 BOM
+
+            fputcsv($out, ['LAPORAN LABA RUGI - ' . strtoupper($perusahaan->nama_perusahaan ?? 'PT PINASTIKA BHAKTI SEMESTA')]);
+            fputcsv($out, ['Periode: ' . date('d/m/Y', strtotime($tanggalDari)) . ' s/d ' . date('d/m/Y', strtotime($tanggalSampai))]);
+            fputcsv($out, ['Tanggal Cetak: ' . date('d/m/Y H:i:s')]);
+            fputcsv($out, []);
+
+            fputcsv($out, ['No', 'Sub', 'Pos Rekening / Deskripsi Transaksi', 'Rincian (Rp)', 'Sub-Total (Rp)', 'Total (Rp)']);
+
+            // A. PENJUALAN
+            fputcsv($out, ['A.', '', 'PENJUALAN', '', '', '']);
+            fputcsv($out, ['A.', '1.', 'Penjualan Jasa', $d['A1_penjualan_jasa'], '', '']);
+            fputcsv($out, ['A.', '2.', 'Penjualan Barang', $d['A2_penjualan_barang'], '', '']);
+            fputcsv($out, ['A.', '3.', 'Diskon Penjualan', -$d['A3_diskon_penjualan'], '', '']);
+            fputcsv($out, ['', '', 'PENJUALAN BRUTO', '', $d['penjualan_bruto'], '']);
+            fputcsv($out, []);
+            fputcsv($out, ['A.', '4.', 'Penjualan Barang Bersih', '', $d['A4_penjualan_barang_bersih'], $d['total_penjualan_bersih']]);
+            fputcsv($out, []);
+
+            // B. HPP
+            fputcsv($out, ['B.', '', 'HARGA POKOK PENJUALAN', '', '', '']);
+            fputcsv($out, ['B.', '1.', 'PERSEDIAAN AWAL BRNG JADI', $d['B1_persediaan_awal_bj'], '', '']);
+            fputcsv($out, ['B.', '2.', 'HRG POKOK PRODUKSI', '', '', '']);
+            fputcsv($out, ['B.', '2. a.', 'PERSEDIAAN AWAL BAHAN BAKU', $d['B2a_persediaan_awal_bb'], '', '']);
+            fputcsv($out, ['B.', '2. b.', 'PEMBELIAN BB', $d['B2b_pembelian_bb'], '', '']);
+            fputcsv($out, ['B.', '2. c.', 'ONGKOS ANGKUT PEMBELIAN+TIMBANG', $d['B2c_ongkos_angkut_pembelian'], '', '']);
+            fputcsv($out, ['B.', '2. d.', 'DISKON PEMBELIAN BB', -$d['B2d_diskon_pembelian_bb'], '', '']);
+            fputcsv($out, ['B.', '2. f.', 'TOTAL PEMBELIAN', '', $d['B2f_total_pembelian'], '']);
+            fputcsv($out, ['', '', '(-) STOCK AKHIR BB', -$d['stock_akhir_bb'], '', '']);
+            fputcsv($out, []);
+            fputcsv($out, ['B.', '3.', 'FOH-BIAYA TENAGA KERJA LANGSUNG', $d['B3_foh_btkl'], '', '']);
+            fputcsv($out, ['B.', '4.', 'FOH-LISTRIK', $d['B4_foh_listrik'], '', '']);
+            fputcsv($out, ['B.', '5.', 'FOH-MAINTENANCE', $d['B5_foh_maintenance'], '', '']);
+            fputcsv($out, ['B.', '6.', 'TOTAL OVERHEAD PABRIK', '', $d['B6_total_overhead_pabrik'], '']);
+            fputcsv($out, ['B.', '7.', 'TOTAL HRG POKOK PRODUKSI', '', '', $d['B7_total_hrg_pokok_produksi']]);
+            fputcsv($out, ['B.', '8.', 'ONGKOS ANGKUT PENJUALAN', $d['B8_ongkos_angkut_penjualan'], '', '']);
+            fputcsv($out, ['B.', '9.', 'PERSEDIAAN AKHIR BRNG JADI', -$d['B9_persediaan_akhir_bj'], '', '']);
+            fputcsv($out, ['B.', '10.', 'KOMISI SALES (fee marketing)', $d['B10_komisi_sales'], '', '']);
+            fputcsv($out, ['B.', '11.', 'KOMISI LAINNYA (ongkos kuli,satpam)', $d['B11_komisi_lainnya'], '', '']);
+            fputcsv($out, ['B.', '12.', 'BIAYA PENJUALAN & STOK AKHIR', '', $d['B12_biaya_penjualan_stok_akhir'], '']);
+            fputcsv($out, ['C.', '', 'TOTAL HRG POKOK PENJUALAN [COGS]', '', '', $d['C_total_cogs']]);
+            fputcsv($out, []);
+            fputcsv($out, ['D.', '', 'LABA / RUGI BRUTO', '', '', $d['D_laba_rugi_bruto']]);
+            fputcsv($out, []);
+            fputcsv($out, ['E.', '', 'GAJI MANAJEMEN', '', $d['E_gaji_manajemen'], '']);
+            fputcsv($out, ['F.', '', 'BIAYA ADMINISTRASI DAN UMUM', '', $d['F_biaya_administrasi_umum'], '']);
+            fputcsv($out, []);
+            fputcsv($out, ['G.', '', 'NET INCOME (DEFISIT / RUGI)', '', '', $d['G_net_income']]);
+
+            fclose($out);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ]);
     }
 
     /**
