@@ -883,12 +883,11 @@ class AkuntansiController extends Controller
 
         $jurnals = $query->orderBy('tanggal', 'desc')->orderBy('id_jurnal', 'desc')->paginate($perPage)->withQueryString();
 
-        $akuns = \Illuminate\Support\Facades\Cache::remember('active_akuns_dropdown', 600, function () {
-            return Akun::select('kode_akun', 'nama_akun', 'kategori')
-                ->where('is_active', true)
-                ->orderBy('kode_akun')
-                ->get();
-        });
+        $akuns = Akun::select('kode_akun', 'nama_akun', 'kategori')
+            ->where('is_active', true)
+            ->orderBy('kode_akun')
+            ->get()
+            ->values();
 
         return view('akuntansi.jurnal', compact('jurnals', 'akuns', 'tanggalDari', 'tanggalSampai', 'search', 'perPage', 'tipe', 'status'));
     }
