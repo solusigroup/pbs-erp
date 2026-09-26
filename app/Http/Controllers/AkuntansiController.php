@@ -11,6 +11,7 @@ use App\Services\KasImportService;
 use App\Services\LabaRugiPbsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -89,6 +90,8 @@ class AkuntansiController extends Controller
             'is_active' => true,
         ]);
 
+        Cache::forget('active_akuns_dropdown');
+
         return redirect()->route('akuntansi.index')
             ->with('success', "Akun COA [{$request->kode_akun}] {$request->nama_akun} berhasil ditambahkan ke bagan akun resmi.");
     }
@@ -124,6 +127,8 @@ class AkuntansiController extends Controller
         $akun->saldo_berjalan += $selisihSaldoAwal;
         $akun->save();
 
+        Cache::forget('active_akuns_dropdown');
+
         return redirect()->route('akuntansi.index')
             ->with('success', "Akun COA [{$akun->kode_akun}] {$akun->nama_akun} berhasil diperbarui.");
     }
@@ -146,6 +151,8 @@ class AkuntansiController extends Controller
 
         $namaAkun = $akun->nama_akun;
         $akun->delete();
+
+        Cache::forget('active_akuns_dropdown');
 
         return redirect()->route('akuntansi.index')
             ->with('success', "Akun COA [{$kode_akun}] {$namaAkun} berhasil dihapus dari bagan akun.");
@@ -831,16 +838,39 @@ class AkuntansiController extends Controller
         $tanggalDari = $request->query('tanggal_dari');
         $tanggalSampai = $request->query('tanggal_sampai');
         $search = $request->query('search');
+        $tipe = $request->query('tipe');
+        $status = $request->query('status');
         $perPage = (int) $request->query('per_page', 15);
 
         if (!in_array($perPage, [15, 30, 50, 100, 500])) {
             $perPage = 15;
         }
 
-        $query = JurnalUmum::with('details.akun');
+        $query = JurnalUmum::with([
+            'details' => function ($q) {
+                $q->select('id_detail', 'id_jurnal', 'kode_akun', 'keterangan_baris', 'debit', 'kredit');
+            },
+            'details.akun' => function ($q) {
+                $q->select('kode_akun', 'nama_akun', 'kategori');
+            }
+        ]);
 
         if ($tanggalDari && $tanggalSampai) {
             $query->whereBetween('tanggal', [$tanggalDari, $tanggalSampai]);
+        } elseif ($tanggalDari) {
+            $query->where('tanggal', '>=', $tanggalDari);
+        } elseif ($tanggalSampai) {
+            $query->where('tanggal', '<=', $tanggalSampai);
+        }
+
+        if ($tipe) {
+            $query->where('tipe_jurnal', $tipe);
+        }
+
+        if ($status === 'draft') {
+            $query->where('is_posted', false);
+        } elseif ($status === 'posted') {
+            $query->where('is_posted', true);
         }
 
         if ($search) {
@@ -852,9 +882,15 @@ class AkuntansiController extends Controller
         }
 
         $jurnals = $query->orderBy('tanggal', 'desc')->orderBy('id_jurnal', 'desc')->paginate($perPage)->withQueryString();
-        $akuns = Akun::where('is_active', true)->orderBy('kode_akun')->get();
 
-        return view('akuntansi.jurnal', compact('jurnals', 'akuns', 'tanggalDari', 'tanggalSampai', 'search', 'perPage'));
+        $akuns = \Illuminate\Support\Facades\Cache::remember('active_akuns_dropdown', 600, function () {
+            return Akun::select('kode_akun', 'nama_akun', 'kategori')
+                ->where('is_active', true)
+                ->orderBy('kode_akun')
+                ->get();
+        });
+
+        return view('akuntansi.jurnal', compact('jurnals', 'akuns', 'tanggalDari', 'tanggalSampai', 'search', 'perPage', 'tipe', 'status'));
     }
 
     /**
@@ -880,6 +916,10 @@ class AkuntansiController extends Controller
             return back()->withInput()->with('error', 'Transaksi tidak seimbang! Total Debit (Rp ' . number_format($totalDebit, 0, ',', '.') . ') harus sama dengan Total Kredit (Rp ' . number_format($totalKredit, 0, ',', '.') . ').');
         }
 
+        if ($totalDebit <= 0) {
+            return back()->withInput()->with('error', 'Total nilai transaksi jurnal harus lebih dari 0.');
+        }
+
         DB::transaction(function () use ($request, $totalDebit, $totalKredit) {
             $jurnal = JurnalUmum::create([
                 'no_transaksi' => $request->no_transaksi,
@@ -898,7 +938,7 @@ class AkuntansiController extends Controller
                     JurnalDetail::create([
                         'id_jurnal' => $jurnal->id_jurnal,
                         'kode_akun' => $item['kode_akun'],
-                        'keterangan_baris' => $item['keterangan_baris'] ?? $request->deskripsi,
+                        'keterangan_baris' => !empty($item['keterangan_baris']) ? $item['keterangan_baris'] : $request->deskripsi,
                         'debit' => $item['debit'],
                         'kredit' => $item['kredit'],
                     ]);
@@ -939,14 +979,49 @@ class AkuntansiController extends Controller
     {
         $jurnal = JurnalUmum::findOrFail($id);
         
-        $request->validate([
+        $rules = [
             'tanggal' => 'required|date',
-            'deskripsi' => 'required|string'
-        ]);
+            'deskripsi' => 'required|string',
+            'tipe_jurnal' => 'nullable|string',
+            'sumber_referensi' => 'nullable|string',
+        ];
 
-        $jurnalService->updateJurnal($jurnal, $request->all());
+        if ($request->has('details')) {
+            $rules['details'] = 'required|array|min:2';
+            $rules['details.*.kode_akun'] = 'required|exists:akun,kode_akun';
+            $rules['details.*.debit'] = 'required|numeric|min:0';
+            $rules['details.*.kredit'] = 'required|numeric|min:0';
+        }
 
-        return back()->with('success', "Jurnal {$jurnal->no_transaksi} berhasil diperbarui.");
+        $request->validate($rules);
+
+        if ($request->has('details')) {
+            $activeDetails = collect($request->details)->filter(function ($item) {
+                return ((float)($item['debit'] ?? 0) > 0) || ((float)($item['kredit'] ?? 0) > 0);
+            })->values();
+
+            if ($activeDetails->count() < 2) {
+                return back()->withInput()->with('error', 'Jurnal harus memiliki minimal 2 baris akun dengan nominal (Debit & Kredit).');
+            }
+
+            $totalDebit = $activeDetails->sum('debit');
+            $totalKredit = $activeDetails->sum('kredit');
+
+            if (abs($totalDebit - $totalKredit) > 0.01) {
+                return back()->withInput()->with('error', 'Transaksi tidak seimbang! Total Debit (Rp ' . number_format($totalDebit, 0, ',', '.') . ') harus sama dengan Total Kredit (Rp ' . number_format($totalKredit, 0, ',', '.') . ').');
+            }
+
+            if ($totalDebit <= 0) {
+                return back()->withInput()->with('error', 'Total nilai transaksi jurnal harus lebih dari 0.');
+            }
+        }
+
+        try {
+            $jurnalService->updateJurnal($jurnal, $request->all());
+            return back()->with('success', "Jurnal {$jurnal->no_transaksi} berhasil diperbarui.");
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Gagal memperbarui jurnal: ' . $e->getMessage());
+        }
     }
 
     public function bulkApproveJurnal(Request $request, \App\Services\JurnalAutoService $jurnalService)

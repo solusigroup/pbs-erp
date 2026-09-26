@@ -443,6 +443,8 @@ class JurnalAutoService
             // Update header
             if (isset($data['tanggal'])) $jurnal->tanggal = $data['tanggal'];
             if (isset($data['deskripsi'])) $jurnal->deskripsi = $data['deskripsi'];
+            if (isset($data['tipe_jurnal'])) $jurnal->tipe_jurnal = $data['tipe_jurnal'];
+            if (array_key_exists('sumber_referensi', $data)) $jurnal->sumber_referensi = $data['sumber_referensi'];
 
             // Update detail jika disediakan
             if (isset($data['details']) && is_array($data['details'])) {
@@ -461,7 +463,7 @@ class JurnalAutoService
                         JurnalDetail::create([
                             'id_jurnal' => $jurnal->id_jurnal,
                             'kode_akun' => $item['kode_akun'],
-                            'keterangan_baris' => $item['keterangan_baris'] ?? $jurnal->deskripsi,
+                            'keterangan_baris' => !empty($item['keterangan_baris']) ? $item['keterangan_baris'] : $jurnal->deskripsi,
                             'debit' => $debit,
                             'kredit' => $kredit,
                         ]);
