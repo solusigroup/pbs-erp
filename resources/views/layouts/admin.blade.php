@@ -206,9 +206,9 @@
                             <span class="sidebar-text font-bold">Approval &amp; Workflow</span>
                         </div>
                         @php
-                            $sidebarDrafts = \App\Models\JurnalUmum::where('is_posted', false)->count();
+                            $sidebarDrafts = rescue(fn() => \App\Models\JurnalUmum::where('is_posted', false)->count(), 0);
                         @endphp
-                        @if($sidebarDrafts > 0)
+                        @if(($sidebarDrafts ?? 0) > 0)
                         <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-slate-900 animate-pulse">
                             {{ $sidebarDrafts }}
                         </span>
