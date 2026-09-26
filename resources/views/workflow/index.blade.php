@@ -5,27 +5,6 @@
 @section('content')
 <div class="space-y-6">
 
-    {{-- ═══ NOTIFIKASI FLASH MESSAGE ═══ --}}
-    @if(session('success'))
-    <div class="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
-        <div class="flex items-center gap-2.5">
-            <i class="fas fa-circle-check text-emerald-400 text-base"></i>
-            <span>{{ session('success') }}</span>
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">&times;</button>
-    </div>
-    @endif
-
-    @if(session('error'))
-    <div class="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between shadow-lg">
-        <div class="flex items-center gap-2.5">
-            <i class="fas fa-triangle-exclamation text-rose-400 text-base"></i>
-            <span>{{ session('error') }}</span>
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-white">&times;</button>
-    </div>
-    @endif
-
     {{-- ═══ HEADER BANNER ═══ --}}
     <div class="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-r from-slate-900 via-[#101d33] to-slate-900 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
         <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
