@@ -65,9 +65,9 @@ class WorkflowController extends Controller
         $unapprovedJournals = WorkflowService::getUnapprovedJournals([], 5);
 
         // Global stats
-        $totalChecklists = WorkflowChecklist::count();
-        $completedChecklists = WorkflowChecklist::where('is_completed', true)->count();
-        $pendingChecklists = $totalChecklists - $completedChecklists;
+        $totalChecklists = rescue(fn() => WorkflowChecklist::count(), 0);
+        $completedChecklists = rescue(fn() => WorkflowChecklist::where('is_completed', true)->count(), 0);
+        $pendingChecklists = max(0, $totalChecklists - $completedChecklists);
         $globalPercentage = $totalChecklists > 0 ? round(($completedChecklists / $totalChecklists) * 100) : 0;
 
         return view('workflow.index', compact(
@@ -93,7 +93,13 @@ class WorkflowController extends Controller
     public function akuntansi(Request $request)
     {
         $tab = $request->query('tab', 'unapproved');
-        $period = $request->query('period', now()->format('Y-m'));
+        $rawPeriod = $request->query('period');
+
+        try {
+            $period = !empty($rawPeriod) ? \Carbon\Carbon::parse($rawPeriod . '-01')->format('Y-m') : now()->format('Y-m');
+        } catch (\Throwable $e) {
+            $period = now()->format('Y-m');
+        }
 
         // 1. Data Jurnal Belum Approve (Draft)
         $filters = [
@@ -111,20 +117,28 @@ class WorkflowController extends Controller
         $closingStatus = WorkflowService::getMonthlyClosingStatus($period);
 
         // Summary Akuntansi
-        $totalJurnals = JurnalUmum::count();
-        $draftJurnalsCount = JurnalUmum::where('is_posted', false)->count();
-        $postedJurnalsCount = $totalJurnals - $draftJurnalsCount;
+        $totalJurnals = rescue(fn() => JurnalUmum::count(), 0);
+        $draftJurnalsCount = rescue(fn() => JurnalUmum::where('is_posted', false)->count(), 0);
+        $postedJurnalsCount = max(0, $totalJurnals - $draftJurnalsCount);
         $approvalPercentage = $totalJurnals > 0 ? round(($postedJurnalsCount / $totalJurnals) * 100) : 100;
 
         // Ambil daftar periode bulan untuk selector
-        $availablePeriods = JurnalUmum::select(DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as ym"))
-            ->distinct()
-            ->orderBy('ym', 'desc')
-            ->pluck('ym')
-            ->toArray();
+        $availablePeriods = rescue(function () {
+            return JurnalUmum::select(DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as ym"))
+                ->whereNotNull('tanggal')
+                ->distinct()
+                ->orderBy('ym', 'desc')
+                ->pluck('ym')
+                ->filter(fn($val) => !empty($val) && is_string($val))
+                ->values()
+                ->toArray();
+        }, []);
 
         if (empty($availablePeriods)) {
             $availablePeriods = [now()->format('Y-m')];
+        }
+        if (!in_array($period, $availablePeriods)) {
+            array_unshift($availablePeriods, $period);
         }
 
         return view('workflow.akuntansi', compact(
@@ -146,6 +160,10 @@ class WorkflowController extends Controller
      */
     public function batchApproveJurnal(Request $request, JurnalAutoService $jurnalService)
     {
+        if ($request->isMethod('get')) {
+            return redirect()->route('workflow.akuntansi');
+        }
+
         $jurnalIds = $request->input('jurnal_ids', []);
 
         if (empty($jurnalIds) || !is_array($jurnalIds)) {

@@ -138,6 +138,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Laporan Keuangan (Laba Rugi & Neraca)
         Route::get('/laporan',             [AkuntansiController::class, 'laporan'])->name('laporan');
+        Route::get('/laba-rugi',           [AkuntansiController::class, 'laporan'])->name('laba-rugi'); // Alias fallback
         Route::get('/laporan/cetak',       [AkuntansiController::class, 'cetakLaporan'])->name('laporan.cetak');
         Route::get('/laporan/export-pbs',  [AkuntansiController::class, 'exportLabaRugiPbs'])->name('laporan.export-pbs');
 
@@ -206,7 +207,9 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('workflow')->name('workflow.')->group(function () {
         Route::get('/',                                [WorkflowController::class, 'index'])->name('index');
         Route::get('/akuntansi',                       [WorkflowController::class, 'akuntansi'])->name('akuntansi');
+        Route::get('/akuntansi/batch-approve',         fn () => redirect()->route('workflow.akuntansi'));
         Route::post('/akuntansi/batch-approve',        [WorkflowController::class, 'batchApproveJurnal'])->name('batchApproveJurnal');
+        Route::get('/akuntansi/generate-missing',      fn () => redirect()->route('workflow.akuntansi', ['tab' => 'missing_journals']));
         Route::post('/akuntansi/generate-missing',     [WorkflowController::class, 'generateMissingJournals'])->name('generateMissingJournals');
         Route::get('/audit',                           [WorkflowController::class, 'audit'])->name('audit');
         Route::post('/closing/verify-step',            [WorkflowController::class, 'verifyClosingStep'])->name('verifyClosingStep');
