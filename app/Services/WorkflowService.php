@@ -429,6 +429,7 @@ class WorkflowService
             $refKey = 'AUTO-PEMBELIAN-RAW-' . $raw->id;
             $hasJournal = JurnalUmum::where('sumber_referensi', $refKey)->exists();
             if (!$hasJournal) {
+                $isZero = (float) $raw->tagihan <= 0;
                 $results['raw_materials'][] = [
                     'id'             => $raw->id,
                     'tanggal'        => $raw->tanggal,
@@ -436,9 +437,11 @@ class WorkflowService
                     'pemasok'        => $raw->nama_pemasok ?? $raw->kode_supplier ?? 'Tanpa Nama',
                     'tagihan'        => (float) $raw->tagihan,
                     'status_lunas'   => $raw->status_lunas ?? 'BELUM',
-                    'has_zero_value' => (float) $raw->tagihan <= 0,
-                    'reason'         => (float) $raw->tagihan <= 0 
-                        ? 'Nominal tagihan Rp 0 (perlu input harga/bobot valid)' 
+                    'has_zero_value' => $isZero,
+                    'is_titipan'     => $isZero,
+                    'remark'         => $raw->remark,
+                    'reason'         => $isZero 
+                        ? 'Transaksi Titipan (Non-Tagihan / Rp 0)' 
                         : 'Jurnal otomatis belum dibukukan',
                 ];
             }
@@ -450,6 +453,7 @@ class WorkflowService
             $refKey = 'AUTO-PENJUALAN-SALE-' . $sale->id;
             $hasJournal = JurnalUmum::where('sumber_referensi', $refKey)->exists();
             if (!$hasJournal) {
+                $isZero = (float) $sale->tagihan <= 0;
                 $results['sales'][] = [
                     'id'             => $sale->id,
                     'id_penjualan'   => $sale->id_penjualan,
@@ -457,9 +461,11 @@ class WorkflowService
                     'buyer'          => $sale->nama_buyer ?? $sale->kode_customer ?? 'Tanpa Nama',
                     'tagihan'        => (float) $sale->tagihan,
                     'status_lunas'   => $sale->status_pelunasan ?? 'BELUM',
-                    'has_zero_value' => (float) $sale->tagihan <= 0,
-                    'reason'         => (float) $sale->tagihan <= 0 
-                        ? 'Nominal tagihan Rp 0 (perlu input harga/bobot valid)' 
+                    'has_zero_value' => $isZero,
+                    'is_titipan'     => $isZero,
+                    'remark'         => $sale->remark,
+                    'reason'         => $isZero 
+                        ? 'Transaksi Titipan / Sample (Non-Tagihan / Rp 0)' 
                         : 'Jurnal otomatis belum dibukukan',
                 ];
             }
@@ -735,8 +741,8 @@ class WorkflowService
                     if (!isset($existingIds[$j->id_jurnal])) {
                         self::initializeChecklist($module, JurnalUmum::class, $j->id_jurnal, $j->no_transaksi, 'jurnal_draft', $userName);
                         
-                        // Validasi debit == kredit
-                        if (abs((float)$j->total_debit - (float)$j->total_kredit) < 0.01 && (float)$j->total_debit > 0) {
+                        // Validasi debit == kredit (termasuk memorial titipan Rp 0)
+                        if (abs((float)$j->total_debit - (float)$j->total_kredit) < 0.01) {
                             self::completeStep($module, $j->id_jurnal, 'jurnal_balance_checked', $userName);
                         }
 

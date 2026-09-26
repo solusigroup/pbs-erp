@@ -318,17 +318,17 @@
                 <div>
                     <h4 class="font-bold text-white text-sm">Pemeriksaan Integritas Transaksi Operasional CUGIL</h4>
                     <p class="text-slate-300 mt-0.5">
-                        Setiap pembelian bahan baku (RAW) dan penjualan cacahan plastik (Sales) wajib tercatat di jurnal akuntansi agar biaya HPP dan pendapatan terakui secara sah.
+                        Setiap pembelian bahan baku (RAW) dan penjualan cacahan plastik (Sales) wajib tercatat di jurnal akuntansi agar biaya HPP dan pendapatan terakui secara sah. Transaksi bernilai tagihan Rp 0 dibukukan otomatis sebagai transaksi <strong>Titipan (Non-Tagihan)</strong>.
                     </p>
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('workflow.generateMissingJournals') }}" onsubmit="return confirm('Generate jurnal otomatis untuk seluruh transaksi dengan nilai tagihan valid?')">
+            <form method="POST" action="{{ route('workflow.generateMissingJournals') }}" onsubmit="return confirm('Generate jurnal otomatis untuk seluruh transaksi operasional (termasuk memorial transaksi titipan)?')">
                 @csrf
                 <input type="hidden" name="type" value="all">
                 <button type="submit" class="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-slate-900 font-black text-xs transition flex items-center gap-1.5 shadow-lg shadow-orange-500/20 shrink-0">
                     <i class="fas fa-wand-magic-sparkles"></i>
-                    <span>⚡ Generate Jurnal Transaksi Valid</span>
+                    <span>⚡ Generate Seluruh Jurnal Transaksi (Termasuk Titipan)</span>
                 </button>
             </form>
         </div>
@@ -375,13 +375,16 @@
                                 <div class="text-amber-400 font-mono font-semibold">{{ $rm['nomor_po'] }}</div>
                                 <div class="text-slate-300 text-[11px]">{{ $rm['pemasok'] }}</div>
                             </td>
-                            <td class="py-2.5 px-3 text-right font-mono font-bold {{ $rm['tagihan'] > 0 ? 'text-white' : 'text-rose-400' }}">
+                            <td class="py-2.5 px-3 text-right font-mono font-bold {{ $rm['tagihan'] > 0 ? 'text-white' : 'text-cyan-400' }}">
                                 Rp {{ number_format($rm['tagihan'], 0, ',', '.') }}
+                                @if($rm['has_zero_value'])
+                                <div class="text-[9px] text-cyan-500 font-sans font-normal">Titipan</div>
+                                @endif
                             </td>
                             <td class="py-2.5 px-3">
                                 @if($rm['has_zero_value'])
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                                    <i class="fas fa-triangle-exclamation"></i> Tagihan Rp 0 (Input nilai)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                                    <i class="fas fa-boxes-packing"></i> Titipan (Non-Tagihan / Rp 0)
                                 </span>
                                 @else
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -390,20 +393,14 @@
                                 @endif
                             </td>
                             <td class="py-2.5 px-3 text-center">
-                                @if($rm['tagihan'] > 0)
                                 <form method="POST" action="{{ route('workflow.generateMissingJournals') }}" class="inline">
                                     @csrf
                                     <input type="hidden" name="type" value="raw">
                                     <input type="hidden" name="id" value="{{ $rm['id'] }}">
-                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition flex items-center gap-1 mx-auto shadow-sm">
-                                        <i class="fas fa-plus"></i> Generate Jurnal
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg {{ $rm['has_zero_value'] ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-indigo-600 hover:bg-indigo-500' }} text-white text-[11px] font-bold transition flex items-center gap-1 mx-auto shadow-sm">
+                                        <i class="fas fa-plus"></i> {{ $rm['has_zero_value'] ? 'Jurnal Titipan' : 'Generate Jurnal' }}
                                     </button>
                                 </form>
-                                @else
-                                <a href="{{ route('cugil.raw.index') }}" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700 transition inline-block">
-                                    Lengkapi Data
-                                </a>
-                                @endif
                             </td>
                         </tr>
                         @endforeach
@@ -454,13 +451,16 @@
                             <td class="py-2.5 px-3 text-white font-medium">
                                 {{ $sl['buyer'] }}
                             </td>
-                            <td class="py-2.5 px-3 text-right font-mono font-bold {{ $sl['tagihan'] > 0 ? 'text-white' : 'text-rose-400' }}">
+                            <td class="py-2.5 px-3 text-right font-mono font-bold {{ $sl['tagihan'] > 0 ? 'text-white' : 'text-cyan-400' }}">
                                 Rp {{ number_format($sl['tagihan'], 0, ',', '.') }}
+                                @if($sl['has_zero_value'])
+                                <div class="text-[9px] text-cyan-500 font-sans font-normal">Titipan / Sample</div>
+                                @endif
                             </td>
                             <td class="py-2.5 px-3">
                                 @if($sl['has_zero_value'])
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                                    <i class="fas fa-triangle-exclamation"></i> Tagihan Rp 0 (Input kuantum)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                                    <i class="fas fa-boxes-packing"></i> Titipan / Sample (Rp 0)
                                 </span>
                                 @else
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -469,20 +469,14 @@
                                 @endif
                             </td>
                             <td class="py-2.5 px-3 text-center">
-                                @if($sl['tagihan'] > 0)
                                 <form method="POST" action="{{ route('workflow.generateMissingJournals') }}" class="inline">
                                     @csrf
                                     <input type="hidden" name="type" value="sales">
                                     <input type="hidden" name="id" value="{{ $sl['id'] }}">
-                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition flex items-center gap-1 mx-auto shadow-sm">
-                                        <i class="fas fa-plus"></i> Generate Jurnal
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg {{ $sl['has_zero_value'] ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-emerald-600 hover:bg-emerald-500' }} text-white text-[11px] font-bold transition flex items-center gap-1 mx-auto shadow-sm">
+                                        <i class="fas fa-plus"></i> {{ $sl['has_zero_value'] ? 'Jurnal Titipan' : 'Generate Jurnal' }}
                                     </button>
                                 </form>
-                                @else
-                                <a href="{{ route('cugil.sales.index') }}" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700 transition inline-block">
-                                    Lengkapi Data
-                                </a>
-                                @endif
                             </td>
                         </tr>
                         @endforeach

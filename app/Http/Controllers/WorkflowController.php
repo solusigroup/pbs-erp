@@ -229,14 +229,12 @@ class WorkflowController extends Controller
             $raws = $query->get();
 
             foreach ($raws as $raw) {
-                if ((float)$raw->tagihan > 0) {
-                    $jurnal = $jurnalService->createJurnalPembelian($raw);
-                    if ($jurnal) {
-                        $generatedCount++;
-                        // Auto-approve jika diminta
-                        if ($request->boolean('auto_approve')) {
-                            $jurnalService->approveJurnal($jurnal);
-                        }
+                $jurnal = $jurnalService->createJurnalPembelian($raw);
+                if ($jurnal) {
+                    $generatedCount++;
+                    // Auto-approve jika diminta
+                    if ($request->boolean('auto_approve')) {
+                        $jurnalService->approveJurnal($jurnal);
                     }
                 }
             }
@@ -250,19 +248,17 @@ class WorkflowController extends Controller
             $sales = $query->get();
 
             foreach ($sales as $sale) {
-                if ((float)$sale->tagihan > 0) {
-                    $jurnal = $jurnalService->createJurnalPenjualan($sale);
-                    if ($jurnal) {
-                        $generatedCount++;
-                        if ($request->boolean('auto_approve')) {
-                            $jurnalService->approveJurnal($jurnal);
-                        }
+                $jurnal = $jurnalService->createJurnalPenjualan($sale);
+                if ($jurnal) {
+                    $generatedCount++;
+                    if ($request->boolean('auto_approve')) {
+                        $jurnalService->approveJurnal($jurnal);
                     }
                 }
             }
         }
 
-        return back()->with('success', "Berhasil membukukan {$generatedCount} jurnal untuk transaksi operasional.");
+        return back()->with('success', "Berhasil membukukan {$generatedCount} jurnal untuk transaksi operasional (termasuk memorial transaksi titipan).");
     }
 
     /**
