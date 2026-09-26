@@ -14,6 +14,7 @@ use App\Models\CugilSupplier;
 use App\Models\Perusahaan;
 use App\Services\ImageCompressionService;
 use App\Services\JurnalAutoService;
+use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -102,6 +103,15 @@ class CugilTransaksiController extends Controller
                 ]);
             }
         });
+
+        // Auto-inisialisasi workflow checklist untuk PO baru
+        $newPo = CugilPurchaseOrder::where('nomor_po', $request->nomor_po)->first();
+        if ($newPo) {
+            WorkflowService::initializeChecklist(
+                'cugil_po', CugilPurchaseOrder::class, $newPo->id, $newPo->nomor_po,
+                'po_created', auth()->user()->name ?? 'System'
+            );
+        }
 
         return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $request->nomor_po . ' dengan ' . count($request->items) . ' item barang berhasil dibuat.');
     }
@@ -247,6 +257,26 @@ class CugilTransaksiController extends Controller
             $jurnalService = new JurnalAutoService();
             $jurnalService->createJurnalPembelian($raw);
         });
+
+        // Auto-inisialisasi workflow checklist untuk Raw Material
+        $newRaw = CugilRawMaterial::where('tanggal', $request->tanggal)
+            ->where('kode_supplier', $request->kode_supplier)
+            ->latest()->first();
+        if ($newRaw) {
+            $refCode = $newRaw->nomor_po ?? 'RAW-' . $newRaw->id;
+            WorkflowService::initializeChecklist(
+                'cugil_raw', CugilRawMaterial::class, $newRaw->id, $refCode,
+                'raw_received', auth()->user()->name ?? 'System'
+            );
+
+            // Jika PO terkait, auto-complete langkah "Barang Diterima" di workflow PO
+            if (!empty($request->nomor_po)) {
+                $po = CugilPurchaseOrder::where('nomor_po', $request->nomor_po)->first();
+                if ($po) {
+                    WorkflowService::completeStep('cugil_po', $po->id, 'po_received', auth()->user()->name ?? 'System', 'Otomatis: barang diterima via RAW Material');
+                }
+            }
+        }
 
         $msg = 'Penerimaan bahan baku (' . count($request->items) . ' SKU barang) berhasil dicatat.';
         if (!empty($request->nomor_po)) {
@@ -435,6 +465,19 @@ class CugilTransaksiController extends Controller
             $jurnalService = new JurnalAutoService();
             $jurnalService->createJurnalPenjualan($sale);
         });
+
+        // Auto-inisialisasi workflow checklist untuk Sale baru
+        $newSale = CugilSale::where('id_penjualan', $request->id_penjualan)->first();
+        if ($newSale) {
+            WorkflowService::initializeChecklist(
+                'cugil_sales', CugilSale::class, $newSale->id, $newSale->id_penjualan,
+                'sales_order_created', auth()->user()->name ?? 'System'
+            );
+            // Auto-complete timbangan jika foto sudah ada
+            if ($newSale->foto_timbangan) {
+                WorkflowService::completeStep('cugil_sales', $newSale->id, 'sales_timbangan', auth()->user()->name ?? 'System', 'Foto timbangan dilampirkan saat pembuatan SO');
+            }
+        }
 
         return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $request->id_penjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat. Jurnal DRAFT penjualan telah dibuat.');
     }

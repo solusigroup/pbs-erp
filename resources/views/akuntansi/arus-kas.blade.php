@@ -23,10 +23,10 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-2">
-                <i class="fas fa-print text-teal-400"></i>
-                <span>Cetak Laporan</span>
-            </button>
+            <a href="{{ route('akuntansi.arus-kas.cetak', request()->query()) }}" target="_blank" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/25" title="Buka Dokumen Cetak Resmi A4 & Simpan PDF">
+                <i class="fas fa-print"></i>
+                <span>Cetak Laporan Resmi / PDF</span>
+            </a>
         </div>
     </div>
 
@@ -181,6 +181,24 @@
                     <span class="font-mono text-lg">Rp {{ number_format($saldoAkhirKas, 0, ',', '.') }}</span>
                 </div>
             </div>
+
+            <!-- Catatan Rincian Kas & Bank Akhir Periode -->
+            @if(isset($rincianKas) && count($rincianKas) > 0)
+                <div class="p-4 rounded-2xl bg-slate-950/40 border border-slate-800/80 space-y-2">
+                    <h5 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-wallet text-teal-400"></i>
+                        <span>Rincian Saldo Rekening Kas &amp; Bank (Per {{ \Carbon\Carbon::parse($tanggalSampai)->format('d/m/Y') }})</span>
+                    </h5>
+                    <div class="space-y-1 pl-2">
+                        @foreach($rincianKas as $rk)
+                            <div class="flex items-center justify-between py-1 border-b border-slate-800/30 text-slate-300">
+                                <span><span class="font-mono text-slate-500 text-[11px] mr-1.5">{{ $rk['kode_akun'] }}</span> {{ $rk['nama_akun'] }}</span>
+                                <span class="font-mono text-white font-medium">Rp {{ number_format($rk['saldo'], 0, ',', '.') }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-800/80">

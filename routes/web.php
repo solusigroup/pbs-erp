@@ -12,6 +12,7 @@ use App\Http\Controllers\PajakController;
 use App\Http\Controllers\PengajuanDanaController;
 use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\ProyekController;
+use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -142,6 +143,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Laporan Arus Kas Direct Method
         Route::get('/arus-kas',            [AkuntansiController::class, 'arusKas'])->name('arus-kas');
+        Route::get('/arus-kas/cetak',      [AkuntansiController::class, 'cetakArusKas'])->name('arus-kas.cetak');
 
         // Cetak Bukti / Voucher
         Route::get('/voucher/{id}',        [AkuntansiController::class, 'printVoucher'])->name('voucher');
@@ -198,6 +200,15 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('analisis')->name('analisis.')->group(function () {
         Route::get('/',      [AnalisisController::class, 'index'])->name('index');
         Route::get('/cetak', [AnalisisController::class, 'cetak'])->name('cetak');
+    });
+
+    // ── Modul Kontrol Workflow (Pencegahan Kelalaian Administrasi) ────────
+    Route::prefix('workflow')->name('workflow.')->group(function () {
+        Route::get('/',                     [WorkflowController::class, 'index'])->name('index');
+        Route::get('/module/{module}',      [WorkflowController::class, 'module'])->name('module');
+        Route::post('/complete-step',       [WorkflowController::class, 'completeStep'])->name('completeStep');
+        Route::post('/uncomplete-step',     [WorkflowController::class, 'uncompleteStep'])->name('uncompleteStep');
+        Route::post('/seed-existing',       [WorkflowController::class, 'seedExisting'])->name('seedExisting');
     });
 
     // ── Modul Manajemen User & Otoritas (RBAC) ──────────────────────────────

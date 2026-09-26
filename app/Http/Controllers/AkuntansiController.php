@@ -1355,17 +1355,15 @@ class AkuntansiController extends Controller
     }
 
     /**
-     * Laporan Arus Kas (Cash Flow Statement - Direct SAK Method with Date Range)
+     * Hitung kalkulasi Arus Kas Metode Langsung (SAK EP/EMKM)
      */
-    public function arusKas(Request $request)
+    private function hitungDataArusKas($tanggalDari, $tanggalSampai)
     {
-        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
-        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
-        
-        $cashCodes = Akun::where('tipe_akun', 'Kas & Bank')->pluck('kode_akun')->toArray();
+        $cashAccounts = Akun::where('tipe_akun', 'Kas & Bank')->orderBy('kode_akun')->get();
+        $cashCodes = $cashAccounts->pluck('kode_akun')->toArray();
 
         // 1. Arus Kas dari Aktivitas Operasi
-        $penerimaanPelanggan = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $penerimaanPelanggan = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('debit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1373,7 +1371,7 @@ class AkuntansiController extends Controller
             })
             ->sum('debit');
 
-        $pembayaranHpp = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $pembayaranHpp = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1384,7 +1382,7 @@ class AkuntansiController extends Controller
             })
             ->sum('kredit');
 
-        $pembayaranGaji = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $pembayaranGaji = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1395,7 +1393,7 @@ class AkuntansiController extends Controller
             })
             ->sum('kredit');
 
-        $pembayaranOperasional = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $pembayaranOperasional = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1406,7 +1404,7 @@ class AkuntansiController extends Controller
             })
             ->sum('kredit');
 
-        $pembayaranPajak = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $pembayaranPajak = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1421,7 +1419,7 @@ class AkuntansiController extends Controller
         $arusKasOperasi = $penerimaanPelanggan - $totalPengeluaranOperasi;
 
         // 2. Arus Kas dari Aktivitas Investasi
-        $perolehanAset = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $perolehanAset = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('kredit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1435,7 +1433,7 @@ class AkuntansiController extends Controller
         $arusKasInvestasi = -$perolehanAset;
 
         // 3. Arus Kas dari Aktivitas Pendanaan
-        $setoranModal = JurnalDetail::whereIn('kode_akun', $cashCodes)
+        $setoranModal = (float) JurnalDetail::whereIn('kode_akun', $cashCodes)
             ->where('debit', '>', 0)
             ->whereHas('jurnal', function ($q) use ($tanggalDari, $tanggalSampai) {
                 $q->where('is_posted', true)
@@ -1462,7 +1460,22 @@ class AkuntansiController extends Controller
 
         $saldoAkhirKas = $saldoAwalPeriode + $kenaikanKasBersih;
 
-        return view('akuntansi.arus-kas', compact(
+        // Rincian Akun Kas & Bank pada Akhir Periode
+        $rincianKas = [];
+        foreach ($cashAccounts as $akun) {
+            $mutasiAkun = JurnalDetail::where('kode_akun', $akun->kode_akun)
+                ->whereHas('jurnal', function ($q) use ($tanggalSampai) {
+                    $q->where('is_posted', true)->where('tanggal', '<=', $tanggalSampai);
+                });
+            $saldoAkun = (float) $akun->saldo_awal + ((float) $mutasiAkun->sum('debit') - (float) $mutasiAkun->sum('kredit'));
+            $rincianKas[] = [
+                'kode_akun' => $akun->kode_akun,
+                'nama_akun' => $akun->nama_akun,
+                'saldo'     => $saldoAkun,
+            ];
+        }
+
+        return compact(
             'tanggalDari',
             'tanggalSampai',
             'penerimaanPelanggan',
@@ -1479,8 +1492,36 @@ class AkuntansiController extends Controller
             'kenaikanKasBersih',
             'saldoAwalKas',
             'saldoAwalPeriode',
-            'saldoAkhirKas'
-        ));
+            'saldoAkhirKas',
+            'rincianKas'
+        );
+    }
+
+    /**
+     * Laporan Arus Kas (Cash Flow Statement - Direct SAK Method with Date Range)
+     */
+    public function arusKas(Request $request)
+    {
+        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        $data = $this->hitungDataArusKas($tanggalDari, $tanggalSampai);
+
+        return view('akuntansi.arus-kas', $data);
+    }
+
+    /**
+     * Cetak Laporan Arus Kas Resmi / Standar SAK EP & EMKM (Print View & PDF)
+     */
+    public function cetakArusKas(Request $request)
+    {
+        $tanggalDari = $request->query('tanggal_dari', date('Y-01-01'));
+        $tanggalSampai = $request->query('tanggal_sampai', date('Y-m-d'));
+
+        $data = $this->hitungDataArusKas($tanggalDari, $tanggalSampai);
+        $data['perusahaan'] = Perusahaan::first();
+
+        return view('akuntansi.cetak-arus-kas', $data);
     }
 
     /**

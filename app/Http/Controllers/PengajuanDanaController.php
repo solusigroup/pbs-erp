@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PengajuanDana;
+use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 
 class PengajuanDanaController extends Controller
@@ -39,7 +40,13 @@ class PengajuanDanaController extends Controller
         $validated['status'] = 'Menunggu Approval';
         $validated['nominal_disetujui'] = 0;
 
-        PengajuanDana::create($validated);
+        $pengajuan = PengajuanDana::create($validated);
+
+        // Auto-inisialisasi workflow checklist
+        WorkflowService::initializeChecklist(
+            'pengajuan_dana', PengajuanDana::class, $pengajuan->id, $pengajuan->nomor_pengajuan,
+            'dana_submitted', auth()->user()->name ?? 'System'
+        );
 
         return redirect()->route('anggaran.index')->with('success', 'Pengajuan dana ' . $request->nomor_pengajuan . ' berhasil diajukan dan menunggu approval BOD Finance.');
     }
@@ -65,6 +72,11 @@ class PengajuanDanaController extends Controller
             'no_bukti_cair' => $request->no_bukti_cair,
         ]);
 
+        // Auto-complete workflow: review & approval
+        $userName = auth()->user()->name ?? 'BOD Finance';
+        WorkflowService::completeStep('pengajuan_dana', $pengajuan->id, 'dana_reviewed', $userName, 'Direview & disetujui');
+        WorkflowService::completeStep('pengajuan_dana', $pengajuan->id, 'dana_approved', $userName, 'Disetujui oleh BOD');
+
         return redirect()->route('anggaran.index')->with('success', 'Pengajuan dana ' . $pengajuan->nomor_pengajuan . ' berhasil disetujui oleh BOD Finance.');
     }
 
@@ -83,6 +95,11 @@ class PengajuanDanaController extends Controller
             'approved_at' => now(),
             'approved_by' => auth()->user()->name ?? 'Kurniawan, S.E. (BOD Finance)',
         ]);
+
+        // Auto-complete workflow: review & rejection
+        $userName = auth()->user()->name ?? 'BOD Finance';
+        WorkflowService::completeStep('pengajuan_dana', $pengajuan->id, 'dana_reviewed', $userName, 'Direview oleh BOD');
+        WorkflowService::completeStep('pengajuan_dana', $pengajuan->id, 'dana_approved', $userName, 'Ditolak oleh BOD: ' . $request->catatan_bod);
 
         return redirect()->route('anggaran.index')->with('warning', 'Pengajuan dana ' . $pengajuan->nomor_pengajuan . ' telah ditolak.');
     }

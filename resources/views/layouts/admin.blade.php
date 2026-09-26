@@ -256,6 +256,12 @@
                 <span class="sidebar-text font-bold">Executive BI &amp; Analisis</span>
             </a>
 
+            <!-- Kontrol Workflow — Pencegahan Kelalaian Administrasi -->
+            <a href="{{ route('workflow.index') }}" class="sidebar-link-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {{ request()->routeIs('workflow.*') ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/25 font-bold' : 'text-teal-400/90 hover:bg-slate-800/60 hover:text-teal-300' }}" title="Kontrol Workflow Bisnis">
+                <i class="fas fa-route w-5 text-center text-base text-teal-400"></i>
+                <span class="sidebar-text font-bold">Kontrol Workflow</span>
+            </a>
+
             <!-- SECTION 3: Direksi & Pengawasan -->
             @php $isDireksiActive = request()->routeIs('pajak.*') || request()->routeIs('anggaran.*') || request()->routeIs('proyek.*'); @endphp
             <div class="accordion-group pt-1">
