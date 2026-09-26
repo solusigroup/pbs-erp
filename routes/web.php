@@ -215,6 +215,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/closing/verify-step',            [WorkflowController::class, 'verifyClosingStep'])->name('verifyClosingStep');
         Route::get('/module/{module}',                 [WorkflowController::class, 'module'])->name('module');
         Route::post('/complete-step',                  [WorkflowController::class, 'completeStep'])->name('completeStep');
+        Route::match(['GET', 'POST'], '/batch-complete', [WorkflowController::class, 'batchComplete'])->name('batchComplete');
         Route::post('/uncomplete-step',                [WorkflowController::class, 'uncompleteStep'])->name('uncompleteStep');
         Route::match(['GET', 'POST'], '/seed-existing', [WorkflowController::class, 'seedExisting'])->name('seedExisting');
         Route::match(['GET', 'POST'], '/seed-all',      [WorkflowController::class, 'seedAllExisting'])->name('seedAllExisting');

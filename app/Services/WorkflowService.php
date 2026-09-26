@@ -134,6 +134,65 @@ class WorkflowService
     }
 
     /**
+     * Selesaikan langkah-langkah workflow secara massal (Batch Complete).
+     *
+     * @param string $module
+     * @param array<int> $referenceIds
+     * @param string|null $stepCode (jika 'all' atau null, selesaikan semua langkah yang belum selesai)
+     * @param string $completedBy
+     * @param string|null $notes
+     * @param array<string>|null $allowedStepCodes (filter hak akses role)
+     * @return int Jumlah langkah yang berhasil diselesaikan
+     */
+    public static function batchComplete(
+        string $module,
+        array $referenceIds,
+        ?string $stepCode,
+        string $completedBy,
+        ?string $notes = null,
+        ?array $allowedStepCodes = null
+    ): int {
+        if (empty($referenceIds)) {
+            return 0;
+        }
+
+        $query = WorkflowChecklist::where('module', $module)
+            ->whereIn('reference_id', $referenceIds)
+            ->where('is_completed', false);
+
+        if (!empty($stepCode) && $stepCode !== 'all') {
+            $query->where('step_code', $stepCode);
+        }
+
+        if (is_array($allowedStepCodes)) {
+            $query->whereIn('step_code', $allowedStepCodes);
+        }
+
+        $updatedCount = $query->update([
+            'is_completed' => true,
+            'completed_at' => now(),
+            'completed_by' => $completedBy,
+            'notes'        => $notes ?: 'Diselesaikan secara massal (Batch Action)',
+            'updated_at'   => now(),
+        ]);
+
+        // Efek samping operasional otomatis
+        if ($module === 'cugil_po') {
+            if (empty($stepCode) || $stepCode === 'all' || $stepCode === 'po_received') {
+                rescue(function () use ($referenceIds) {
+                    CugilPurchaseOrder::whereIn('id', $referenceIds)
+                        ->where(function ($q) {
+                            $q->whereNull('status_terima')->orWhere('status_terima', '!=', 'YA');
+                        })
+                        ->update(['status_terima' => 'YA']);
+                });
+            }
+        }
+
+        return $updatedCount;
+    }
+
+    /**
      * Hitung progres workflow sebuah dokumen.
      *
      * @return array{total: int, completed: int, percentage: int, is_complete: bool, current_step: ?string}

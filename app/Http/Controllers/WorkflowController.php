@@ -335,24 +335,42 @@ class WorkflowController extends Controller
             ->orderBy('step_order')
             ->get();
 
-        // Ambil semua dokumen dengan workflow
-        $documents = WorkflowChecklist::where('module', $module)
-            ->select('reference_id', 'reference_code')
-            ->distinct()
-            ->get();
+        // Ambil semua checklist modul dalam satu query terindeks (High Performance)
+        $allChecklists = WorkflowChecklist::where('module', $module)
+            ->orderBy('step_order')
+            ->get()
+            ->groupBy('reference_id');
 
         $documentList = [];
-        foreach ($documents as $doc) {
-            $progress = WorkflowService::getProgress($module, $doc->reference_id);
-            $steps = WorkflowChecklist::where('module', $module)
-                ->where('reference_id', $doc->reference_id)
-                ->orderBy('step_order')
-                ->get();
+        $incompleteCount = 0;
+
+        foreach ($allChecklists as $refId => $steps) {
+            $firstStep = $steps->first();
+            $refCode = $firstStep->reference_code ?? ('DOC-' . $refId);
+
+            $totalSteps = $steps->count();
+            $requiredSteps = $steps->where('is_required', true);
+            $completedSteps = $steps->where('is_completed', true)->count();
+            $requiredCompleted = $requiredSteps->where('is_completed', true)->count();
+
+            $isComplete = $requiredSteps->isNotEmpty() && $requiredCompleted >= $requiredSteps->count();
+            if (!$isComplete) {
+                $incompleteCount++;
+            }
+
+            $percentage = $totalSteps > 0 ? (int) round(($completedSteps / $totalSteps) * 100) : 0;
+            $currentStep = $steps->firstWhere('is_completed', false)?->step_name;
 
             $documentList[] = [
-                'reference_id'   => $doc->reference_id,
-                'reference_code' => $doc->reference_code,
-                'progress'       => $progress,
+                'reference_id'   => $refId,
+                'reference_code' => $refCode,
+                'progress'       => [
+                    'total'        => $totalSteps,
+                    'completed'    => $completedSteps,
+                    'percentage'   => $percentage,
+                    'is_complete'  => $isComplete,
+                    'current_step' => $currentStep,
+                ],
                 'steps'          => $steps,
             ];
         }
@@ -374,12 +392,27 @@ class WorkflowController extends Controller
         }
         $documentList = array_values($documentList);
 
+        // Pagination: 50 dokumen per halaman untuk rendering instan
+        $page = (int) $request->query('page', 1);
+        $perPage = 50;
+        $totalItems = count($documentList);
+        $itemsForCurrentPage = array_slice($documentList, max(0, ($page - 1) * $perPage), $perPage);
+
+        $paginatedDocuments = new \Illuminate\Pagination\LengthAwarePaginator(
+            $itemsForCurrentPage,
+            $totalItems,
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         $summary = WorkflowService::getModuleSummary($module);
         $skipped = WorkflowService::findSkippedWorkflows($module);
 
         return view('workflow.module', compact(
             'module', 'moduleLabel', 'moduleIcon', 'moduleColor',
-            'definitions', 'documentList', 'summary', 'skipped', 'statusFilter'
+            'definitions', 'documentList', 'paginatedDocuments', 'summary',
+            'skipped', 'statusFilter', 'incompleteCount'
         ));
     }
 
@@ -422,6 +455,67 @@ class WorkflowController extends Controller
         }
 
         return back()->with('warning', 'Langkah ini sudah diselesaikan sebelumnya atau tidak ditemukan.');
+    }
+
+    /**
+     * Selesaikan langkah workflow secara massal (Bulk / Batch Completion).
+     */
+    public function batchComplete(Request $request)
+    {
+        if ($request->isMethod('get')) {
+            $module = $request->query('module', 'cugil_po');
+            return redirect()->route('workflow.module', $module);
+        }
+
+        $request->validate([
+            'module'         => 'required|string',
+            'scope'          => 'nullable|string', // 'selected' | 'all_incomplete'
+            'reference_ids'  => 'nullable|array',
+            'step_code'      => 'nullable|string',
+            'notes'          => 'nullable|string|max:255',
+        ]);
+
+        $module = $request->input('module');
+        $scope = $request->input('scope', 'selected');
+        $stepCode = $request->input('step_code');
+        $user = auth()->user();
+        $completedBy = $user->name ?? 'User (Batch Action)';
+        $isSuper = $user ? ($user->isBOD() || $user->isAdmin()) : false;
+
+        if ($scope === 'all_incomplete') {
+            // Ambil seluruh dokumen dengan step belum selesai di modul ini
+            $referenceIds = WorkflowChecklist::where('module', $module)
+                ->where('is_completed', false)
+                ->distinct()
+                ->pluck('reference_id')
+                ->toArray();
+        } else {
+            $referenceIds = $request->input('reference_ids', []);
+        }
+
+        if (empty($referenceIds)) {
+            return back()->with('warning', 'Tidak ada dokumen yang dipilih untuk diselesaikan.');
+        }
+
+        // Tentukan batas role jika bukan BOD/Admin
+        $allowedStepCodes = null;
+        if (!$isSuper) {
+            $definitions = WorkflowDefinition::where('module', $module)->get();
+            $allowedStepCodes = [];
+            foreach ($definitions as $def) {
+                if (!$def->required_role || ($user && $user->hasRole($def->required_role))) {
+                    $allowedStepCodes[] = $def->step_code;
+                }
+            }
+        }
+
+        $notes = $request->input('notes') ?: ('Diselesaikan via Batch Action oleh ' . $completedBy);
+        $count = WorkflowService::batchComplete($module, $referenceIds, $stepCode, $completedBy, $notes, $allowedStepCodes);
+
+        $docCount = count($referenceIds);
+        $stepLabel = (!empty($stepCode) && $stepCode !== 'all') ? "langkah [{$stepCode}]" : "seluruh langkah pending";
+
+        return back()->with('success', "⚡ Berhasil menyelesaikan {$count} {$stepLabel} pada {$docCount} dokumen secara serentak.");
     }
 
     /**
