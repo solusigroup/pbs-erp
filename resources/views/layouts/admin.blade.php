@@ -426,7 +426,7 @@
 
         <!-- Footer -->
         <footer class="p-6 border-t border-slate-800/60 text-center text-xs text-slate-500">
-            &copy; {{ date('Y') }} PT Pinastika Bhakti Semesta (PBS). Sistem ERP &amp; Akuntansi Internal Terpadu.
+            &copy; {{ date('Y') }} PT Pinastika Bhakti Semesta (PBS). Sistem ERP &amp; Akuntansi Internal Terpadu. POWERED by <a href="https://simpleakunting.id" target="_blank" rel="noopener noreferrer" class="text-amber-500 hover:text-amber-400 font-semibold transition hover:underline">simpleakunting.id</a>
         </footer>
     </div>
 
