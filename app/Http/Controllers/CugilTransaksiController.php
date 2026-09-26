@@ -60,7 +60,10 @@ class CugilTransaksiController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)->first();
+            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
+                ->orWhere('nama_supplier', $request->kode_supplier)
+                ->first();
+            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
             $namaVendor = $sup ? $sup->nama_supplier : $request->kode_supplier;
 
             $totalQty = 0;
@@ -76,7 +79,7 @@ class CugilTransaksiController extends Controller
             $po = CugilPurchaseOrder::create([
                 'nomor_po' => $request->nomor_po,
                 'tanggal' => $request->tanggal,
-                'kode_supplier' => $request->kode_supplier,
+                'kode_supplier' => $kodeSupplier,
                 'nama_vendor' => $namaVendor,
                 'total_qty' => $totalQty,
                 'total_nilai' => $totalNilai,
@@ -114,6 +117,73 @@ class CugilTransaksiController extends Controller
         }
 
         return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $request->nomor_po . ' dengan ' . count($request->items) . ' item barang berhasil dibuat.');
+    }
+
+    public function updatePurchaseOrder(Request $request, $id)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'kode_supplier' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.nama_barang' => 'required|string',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.harga_satuan' => 'required|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($request, $id) {
+            $po = CugilPurchaseOrder::where('id', $id)->lockForUpdate()->firstOrFail();
+
+            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
+                ->orWhere('nama_supplier', $request->kode_supplier)
+                ->first();
+            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
+            $namaVendor = $sup ? $sup->nama_supplier : $request->kode_supplier;
+
+            $totalQty = 0;
+            $totalNilai = 0;
+
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty'];
+                $hrg = (float) $item['harga_satuan'];
+                $totalQty += $qty;
+                $totalNilai += ($qty * $hrg);
+            }
+
+            // Note: nomor_po is immutable / not updated
+            $po->update([
+                'tanggal' => $request->tanggal,
+                'kode_supplier' => $kodeSupplier,
+                'nama_vendor' => $namaVendor,
+                'total_qty' => $totalQty,
+                'total_nilai' => $totalNilai,
+                'termin_payment' => $request->termin_payment ?? 'BELI PUTUS',
+                'ongkos_angkut' => $request->ongkos_angkut ?? 0,
+                'batas_tanggal' => $request->batas_tanggal,
+                'petugas' => $request->petugas ?? auth()->user()->name ?? 'WINARDI',
+                'keterangan' => $request->keterangan,
+                'status_terima' => $request->status_terima ?? $po->status_terima,
+            ]);
+
+            $po->items()->delete();
+
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty'];
+                $hrg = (float) $item['harga_satuan'];
+                CugilPurchaseOrderItem::create([
+                    'cugil_po_id' => $po->id,
+                    'kode_barang' => $item['kode_barang'] ?? null,
+                    'nama_barang' => $item['nama_barang'],
+                    'qty' => $qty,
+                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'harga_satuan' => $hrg,
+                    'harga_total' => $qty * $hrg,
+                    'catatan' => $item['catatan'] ?? null,
+                ]);
+            }
+        });
+
+        $po = CugilPurchaseOrder::findOrFail($id);
+        return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $po->nomor_po . ' berhasil diperbarui.');
     }
 
     // ─── RAW MATERIALS (TERIMA BAHAN BAKU) ──────────────────────────────────────
@@ -169,7 +239,10 @@ class CugilTransaksiController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)->lockForUpdate()->first();
+            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
+                ->orWhere('nama_supplier', $request->kode_supplier)
+                ->lockForUpdate()->first();
+            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
             $namaPemasok = $sup ? $sup->nama_supplier : $request->kode_supplier;
 
             $totalQty = 0;
@@ -193,7 +266,7 @@ class CugilTransaksiController extends Controller
             $raw = CugilRawMaterial::create([
                 'nomor_po' => $request->nomor_po,
                 'tanggal' => $request->tanggal,
-                'kode_supplier' => $request->kode_supplier,
+                'kode_supplier' => $kodeSupplier,
                 'nama_pemasok' => $namaPemasok,
                 'batch_produksi' => $request->batch_produksi,
                 'total_qty' => $totalQty,
@@ -287,6 +360,123 @@ class CugilTransaksiController extends Controller
         return redirect()->route('cugil.raw.index')->with('success', $msg);
     }
 
+    public function updateRawMaterial(Request $request, $id)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'kode_supplier' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.nama_barang' => 'required|string',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.harga_satuan' => 'required|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($request, $id) {
+            $raw = CugilRawMaterial::with('items')->where('id', $id)->lockForUpdate()->firstOrFail();
+
+            // 1. Rollback old stock additions
+            foreach ($raw->items as $item) {
+                if (!empty($item->kode_barang)) {
+                    $barang = CugilBarang::where('kode_barang', $item->kode_barang)->lockForUpdate()->first();
+                    if ($barang) {
+                        $barang->barang_masuk = max(0, $barang->barang_masuk - (float) $item->qty);
+                        $barang->stok_akhir = $barang->stok_awal + $barang->barang_masuk - $barang->barang_keluar;
+                        $barang->save();
+                    }
+                }
+            }
+
+            // 2. Delete old items
+            $raw->items()->delete();
+
+            // 3. Supplier lookup
+            $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
+                ->orWhere('nama_supplier', $request->kode_supplier)
+                ->first();
+            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
+            $namaPemasok = $sup ? $sup->nama_supplier : $request->kode_supplier;
+
+            // 4. Calculate totals
+            $totalQty = 0;
+            $totalBruto = 0;
+            $totalRafaksi = 0;
+
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty'];
+                $hrg = (float) $item['harga_satuan'];
+                $raf = (float) ($item['diskon_rafaksi'] ?? 0);
+                $totalQty += $qty;
+                $totalBruto += ($qty * $hrg);
+                $totalRafaksi += $raf;
+            }
+
+            $tagihan = max(0, $totalBruto - $totalRafaksi);
+            $payment = isset($request->payment) ? (float) $request->payment : (float) $raw->payment;
+            $sisa = max(0, $tagihan - $payment);
+            $statusLunas = $sisa <= 0 && $tagihan > 0 ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
+
+            // 5. Update header (nomor_po is immutable / not updated)
+            $raw->update([
+                'tanggal' => $request->tanggal,
+                'kode_supplier' => $kodeSupplier,
+                'nama_pemasok' => $namaPemasok,
+                'batch_produksi' => $request->batch_produksi ?? $raw->batch_produksi,
+                'total_qty' => $totalQty,
+                'total_bruto' => $totalBruto,
+                'total_rafaksi' => $totalRafaksi,
+                'ongkos_angkut' => $request->ongkos_angkut ?? $raw->ongkos_angkut,
+                'tagihan' => $tagihan,
+                'payment' => $payment,
+                'sisa_tagihan' => $sisa,
+                'status_lunas' => $statusLunas,
+                'truk' => $request->truk ?? $raw->truk,
+                'status_truk_lunas' => $request->status_truk_lunas ?? $raw->status_truk_lunas,
+                'timbangan' => $request->timbangan ?? $raw->timbangan,
+                'petugas' => $request->petugas ?? $raw->petugas,
+                'remark' => $request->remark ?? $raw->remark,
+                'bulan' => (int) date('n', strtotime($request->tanggal)),
+                'tahun' => (int) date('Y', strtotime($request->tanggal)),
+            ]);
+
+            // 6. Create new items and update stock
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty'];
+                $hrg = (float) $item['harga_satuan'];
+                $raf = (float) ($item['diskon_rafaksi'] ?? 0);
+                $subtotal = ($qty * $hrg) - $raf;
+
+                CugilRawItem::create([
+                    'cugil_raw_id' => $raw->id,
+                    'kode_barang' => $item['kode_barang'] ?? null,
+                    'nama_barang' => $item['nama_barang'],
+                    'qty' => $qty,
+                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'harga_satuan' => $hrg,
+                    'harga_total' => $qty * $hrg,
+                    'diskon_rafaksi' => $raf,
+                    'subtotal' => $subtotal,
+                    'catatan' => $item['catatan'] ?? null,
+                ]);
+
+                if (!empty($item['kode_barang'])) {
+                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                    if ($brg) {
+                        $brg->barang_masuk += $qty;
+                        $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
+                        $brg->save();
+                    }
+                }
+            }
+
+            // Regenerate Jurnal DRAFT otomatis
+            $jurnalService = new JurnalAutoService();
+            $jurnalService->createJurnalPembelian($raw);
+        });
+
+        $raw = CugilRawMaterial::findOrFail($id);
+        return redirect()->route('cugil.raw.index')->with('success', 'Data penerimaan bahan baku ' . ($raw->nomor_po ?? 'RAW-'.$raw->id) . ' berhasil diperbarui.');
+    }
+
     public function updateRawMaterialStatus(Request $request, $id)
     {
         $autoJurnalMsg = '';
@@ -328,7 +518,16 @@ class CugilTransaksiController extends Controller
         $query = CugilSale::with(['customer', 'items.barang']);
 
         if ($request->filled('customer')) {
-            $query->where('kode_customer', $request->customer);
+            $custSearch = $request->customer;
+            $query->where(function ($q) use ($custSearch) {
+                $q->where('kode_customer', $custSearch)
+                  ->orWhere('kode_customer', 'LIKE', '%' . $custSearch . '%')
+                  ->orWhere('nama_buyer', 'LIKE', '%' . $custSearch . '%')
+                  ->orWhereHas('customer', function ($cq) use ($custSearch) {
+                      $cq->where('nama_customer', 'LIKE', '%' . $custSearch . '%')
+                         ->orWhere('kode_customer', 'LIKE', '%' . $custSearch . '%');
+                  });
+            });
         }
         if ($request->filled('status')) {
             $query->where('status_pelunasan', $request->status);
@@ -369,7 +568,10 @@ class CugilTransaksiController extends Controller
         }
 
         DB::transaction(function () use ($request, $fotoTimbanganPath) {
-            $cust = CugilCustomer::where('kode_customer', $request->kode_customer)->lockForUpdate()->first();
+            $cust = CugilCustomer::where('kode_customer', $request->kode_customer)
+                ->orWhere('nama_customer', $request->kode_customer)
+                ->lockForUpdate()->first();
+            $kodeCustomer = $cust ? $cust->kode_customer : $request->kode_customer;
             $namaBuyer = $cust ? $cust->nama_customer : $request->kode_customer;
 
             $totalQty = 0;
@@ -400,7 +602,7 @@ class CugilTransaksiController extends Controller
             $sale = CugilSale::create([
                 'id_penjualan' => $request->id_penjualan,
                 'tanggal' => $request->tanggal,
-                'kode_customer' => $request->kode_customer,
+                'kode_customer' => $kodeCustomer,
                 'nama_buyer' => $namaBuyer,
                 'tanggal_kirim' => $request->tanggal_kirim ?? $request->tanggal,
                 'sales' => $request->sales ?? 'ACH. CHUMAIDI',
@@ -428,6 +630,7 @@ class CugilTransaksiController extends Controller
 
             foreach ($request->items as $item) {
                 $qty = (float) $item['qty_terjual'];
+                $qtyGudang = isset($item['qty_gudang']) && $item['qty_gudang'] !== '' ? (float) $item['qty_gudang'] : $qty;
                 $sak = (int) ($item['jumlah_sak'] ?? 0);
                 $hrg = (float) $item['harga_satuan'];
                 $subtotalAwal = $qty * $hrg;
@@ -439,7 +642,7 @@ class CugilTransaksiController extends Controller
                     'cugil_sale_id' => $sale->id,
                     'kode_barang' => $item['kode_barang'] ?? null,
                     'nama_barang' => $item['nama_barang'],
-                    'qty_gudang' => $item['qty_gudang'] ?? $qty,
+                    'qty_gudang' => $qtyGudang,
                     'qty_terjual' => $qty,
                     'jumlah_sak' => $sak,
                     'harga_satuan' => $hrg,
@@ -480,6 +683,150 @@ class CugilTransaksiController extends Controller
         }
 
         return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $request->id_penjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat. Jurnal DRAFT penjualan telah dibuat.');
+    }
+
+    public function updateSale(Request $request, $id)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'kode_customer' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.nama_barang' => 'required|string',
+            'items.*.qty_terjual' => 'required|numeric|min:0.01',
+            'items.*.harga_satuan' => 'required|numeric|min:0',
+            'foto_timbangan' => 'nullable|image|mimes:jpeg,png,jpg,webp,heic|max:20480',
+        ]);
+
+        DB::transaction(function () use ($request, $id) {
+            $sale = CugilSale::with('items')->where('id', $id)->lockForUpdate()->firstOrFail();
+
+            // 1. Rollback old stock out
+            foreach ($sale->items as $item) {
+                if (!empty($item->kode_barang)) {
+                    $barang = CugilBarang::where('kode_barang', $item->kode_barang)->lockForUpdate()->first();
+                    if ($barang) {
+                        $barang->barang_keluar = max(0, $barang->barang_keluar - (float) $item->qty_terjual);
+                        $barang->stok_akhir = $barang->stok_awal + $barang->barang_masuk - $barang->barang_keluar;
+                        $barang->save();
+                    }
+                }
+            }
+
+            // 2. Delete old items
+            $sale->items()->delete();
+
+            // 3. Customer lookup
+            $cust = CugilCustomer::where('kode_customer', $request->kode_customer)
+                ->orWhere('nama_customer', $request->kode_customer)
+                ->first();
+            $kodeCustomer = $cust ? $cust->kode_customer : $request->kode_customer;
+            $namaBuyer = $cust ? $cust->nama_customer : $request->kode_customer;
+
+            // 4. Handle photo upload
+            $fotoTimbanganPath = $sale->foto_timbangan;
+            if ($request->hasFile('foto_timbangan')) {
+                if ($sale->foto_timbangan) {
+                    ImageCompressionService::deleteImage($sale->foto_timbangan);
+                }
+                $fotoTimbanganPath = ImageCompressionService::compressAndStore($request->file('foto_timbangan'), 'timbangan_sales', 1400, 80);
+            }
+
+            // 5. Calculate totals
+            $totalQty = 0;
+            $totalSak = 0;
+            $totalBruto = 0;
+            $totalDiskon = 0;
+
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty_terjual'];
+                $sak = (int) ($item['jumlah_sak'] ?? 0);
+                $hrg = (float) $item['harga_satuan'];
+                $subtotalAwal = $qty * $hrg;
+                $diskonP = (float) ($item['diskon_persen'] ?? 0);
+                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+
+                $totalQty += $qty;
+                $totalSak += $sak;
+                $totalBruto += $subtotalAwal;
+                $totalDiskon += $diskonRp;
+            }
+
+            $ongkir = (float) ($request->ongkos_angkut ?? 0);
+            $tagihan = max(0, $totalBruto - $totalDiskon);
+            $payment = isset($request->payment) ? (float) $request->payment : (float) $sale->payment;
+            $sisaPiutang = max(0, $tagihan - $payment);
+            $statusPelunasan = ($payment >= $tagihan && $tagihan > 0) ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
+
+            // 6. Update Sale header (id_penjualan remains read-only / unchanged)
+            $sale->update([
+                'tanggal' => $request->tanggal,
+                'kode_customer' => $kodeCustomer,
+                'nama_buyer' => $namaBuyer,
+                'tanggal_kirim' => $request->tanggal_kirim ?? $request->tanggal,
+                'sales' => $request->sales ?? $sale->sales,
+                'broker' => $request->broker ?? $sale->broker,
+                'fee_makelar' => $request->fee_makelar ?? $sale->fee_makelar,
+                'truk' => $request->truk ?? $sale->truk,
+                'status_broker_truk_lunas' => $request->status_broker_truk_lunas ?? $sale->status_broker_truk_lunas,
+                'ongkos_kuli' => $request->ongkos_kuli ?? $sale->ongkos_kuli,
+                'ongkos_angkut' => $ongkir,
+                'down_payment' => $request->down_payment ?? $sale->down_payment,
+                'total_qty' => $totalQty,
+                'total_sak' => $totalSak,
+                'total_bruto' => $totalBruto,
+                'total_diskon' => $totalDiskon,
+                'tagihan' => $tagihan,
+                'payment' => $payment,
+                'sisa_piutang' => $sisaPiutang,
+                'status_pelunasan' => $statusPelunasan,
+                'status_timbangan' => $fotoTimbanganPath ? 'SUDAH' : 'BELUM',
+                'foto_timbangan' => $fotoTimbanganPath,
+                'remark' => $request->remark ?? $sale->remark,
+            ]);
+
+            // 7. Create new items and apply stock out
+            foreach ($request->items as $item) {
+                $qty = (float) $item['qty_terjual'];
+                $qtyGudang = isset($item['qty_gudang']) && $item['qty_gudang'] !== '' ? (float) $item['qty_gudang'] : $qty;
+                $sak = (int) ($item['jumlah_sak'] ?? 0);
+                $hrg = (float) $item['harga_satuan'];
+                $subtotalAwal = $qty * $hrg;
+                $diskonP = (float) ($item['diskon_persen'] ?? 0);
+                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+                $subtotalNet = $subtotalAwal - $diskonRp;
+
+                CugilSaleItem::create([
+                    'cugil_sale_id' => $sale->id,
+                    'kode_barang' => $item['kode_barang'] ?? null,
+                    'nama_barang' => $item['nama_barang'],
+                    'qty_gudang' => $qtyGudang,
+                    'qty_terjual' => $qty,
+                    'jumlah_sak' => $sak,
+                    'harga_satuan' => $hrg,
+                    'harga_total' => $subtotalAwal,
+                    'diskon_persen' => $diskonP,
+                    'diskon_rupiah' => $diskonRp,
+                    'subtotal' => $subtotalNet,
+                    'catatan' => $item['catatan'] ?? null,
+                ]);
+
+                if (!empty($item['kode_barang'])) {
+                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                    if ($brg) {
+                        $brg->barang_keluar += $qty;
+                        $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
+                        $brg->save();
+                    }
+                }
+            }
+
+            // Regenerate auto journal for sales
+            $jurnalService = new JurnalAutoService();
+            $jurnalService->createJurnalPenjualan($sale);
+        });
+
+        $sale = CugilSale::findOrFail($id);
+        return redirect()->route('cugil.sales.index')->with('success', 'Transaksi Penjualan ' . $sale->id_penjualan . ' berhasil diperbarui.');
     }
 
     public function updateSaleStatus(Request $request, $id)

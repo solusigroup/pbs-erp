@@ -363,13 +363,18 @@
                 </div>
                 <div class="space-y-2">
                     @forelse($cugilRecentRaw as $r)
+                        @php
+                            $namaBarang = $r->items && $r->items->count() > 0 
+                                ? $r->items->pluck('nama_barang')->filter()->implode(', ') 
+                                : null;
+                        @endphp
                         <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
                             <div>
-                                <span class="font-semibold text-white block">{{ $r->nama_barang }}</span>
+                                <span class="font-semibold text-white block">{{ $namaBarang ?: ($r->nama_pemasok ?? $r->kode_supplier) }}</span>
                                 <span class="text-[10px] text-slate-400">{{ $r->nama_pemasok }} &bull; {{ $r->tanggal ? $r->tanggal->format('d/m/Y') : '-' }}</span>
                             </div>
                             <div class="text-right">
-                                <span class="font-bold text-amber-400 block">{{ number_format($r->qty, 1) }} Kg</span>
+                                <span class="font-bold text-amber-400 block">{{ number_format($r->total_qty, 1, ',', '.') }} Kg</span>
                                 <span class="text-[10px] text-slate-300">Rp {{ number_format($r->tagihan, 0, ',', '.') }}</span>
                             </div>
                         </div>
@@ -387,13 +392,18 @@
                 </div>
                 <div class="space-y-2">
                     @forelse($cugilRecentSales as $s)
+                        @php
+                            $namaBarang = $s->items && $s->items->count() > 0 
+                                ? $s->items->pluck('nama_barang')->filter()->implode(', ') 
+                                : null;
+                        @endphp
                         <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
                             <div>
-                                <span class="font-semibold text-white block">{{ $s->nama_barang }}</span>
+                                <span class="font-semibold text-white block">{{ $namaBarang ?: ($s->nama_buyer ?? $s->kode_customer) }}</span>
                                 <span class="text-[10px] text-slate-400">{{ $s->nama_buyer }} &bull; {{ $s->tanggal ? $s->tanggal->format('d/m/Y') : '-' }}</span>
                             </div>
                             <div class="text-right">
-                                <span class="font-bold text-emerald-400 block">{{ number_format($s->qty_terjual > 0 ? $s->qty_terjual : $s->qty_gudang, 1) }} Kg</span>
+                                <span class="font-bold text-emerald-400 block">{{ number_format($s->total_qty, 1, ',', '.') }} Kg</span>
                                 <span class="text-[10px] text-white font-medium">Rp {{ number_format($s->tagihan, 0, ',', '.') }}</span>
                             </div>
                         </div>

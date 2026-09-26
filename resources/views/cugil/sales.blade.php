@@ -63,14 +63,7 @@
     <form method="GET" action="{{ route('cugil.sales.index') }}" class="bg-gray-800/80 p-4 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-5 gap-3">
         <div>
             <label class="block text-xs text-gray-400 mb-1">Kastamer / Pembeli</label>
-            <select name="customer" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                <option value="">Semua Kastamer</option>
-                @foreach($customers as $cust)
-                    <option value="{{ $cust->kode_customer }}" {{ request('customer') == $cust->kode_customer ? 'selected' : '' }}>
-                        {{ $cust->kode_customer }} - {{ $cust->nama_customer }}
-                    </option>
-                @endforeach
-            </select>
+            <input type="text" name="customer" value="{{ request('customer') }}" list="listCustomerSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Ketik / Pilih Kastamer...">
         </div>
         <div>
             <label class="block text-xs text-gray-400 mb-1">Status Pembayaran</label>
@@ -112,7 +105,9 @@
                     <th class="px-3 py-3">Tanggal</th>
                     <th class="px-3 py-3">Pembeli (Kastamer)</th>
                     <th class="px-3 py-3">Daftar SKU Barang Dijual</th>
-                    <th class="px-3 py-3 text-right">Total Qty</th>
+                    <th class="px-3 py-3 text-right">Qty Gudang</th>
+                    <th class="px-3 py-3 text-right">Qty Terjual</th>
+                    <th class="px-3 py-3 text-center">Jml Sak</th>
                     <th class="px-3 py-3 text-right">Tagihan Net</th>
                     <th class="px-3 py-3 text-right">Payment</th>
                     <th class="px-3 py-3 text-center">Slip Timbangan</th>
@@ -136,16 +131,23 @@
                             <div class="space-y-1.5 min-w-[220px]">
                                 @foreach($s->items as $it)
                                     <div class="bg-gray-900/60 p-2 rounded-lg border border-gray-700/60 text-xs">
-                                        <div class="font-medium text-white flex justify-between">
+                                        <div class="font-medium text-white flex justify-between items-center">
                                             <span>{{ $it->nama_barang }}</span>
-                                            @if($it->jumlah_sak > 0)<span class="text-[10px] text-gray-400 font-normal">({{ $it->jumlah_sak }} sak)</span>@endif
+                                            @if(($it->jumlah_sak ?? 0) > 0)
+                                                <span class="text-[10px] text-sky-400 font-semibold bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">{{ number_format($it->jumlah_sak, 0) }} sak</span>
+                                            @endif
                                         </div>
-                                        <div class="text-[11px] text-gray-400 flex justify-between mt-0.5">
-                                            <span>{{ number_format($it->qty_terjual, 1) }} Kg &times; Rp {{ number_format($it->harga_satuan, 0, ',', '.') }}</span>
+                                        <div class="text-[11px] text-gray-400 flex justify-between mt-1">
+                                            <span>
+                                                <span class="text-amber-300 text-[10px]">Gdg: {{ number_format($it->qty_gudang ?? $it->qty_terjual, 1) }}</span>
+                                                <span class="text-gray-500 mx-0.5">&bull;</span>
+                                                <span class="text-white">{{ number_format($it->qty_terjual, 1) }} Kg</span>
+                                                <span class="text-gray-500 text-[10px]">&times; Rp {{ number_format($it->harga_satuan, 0, ',', '.') }}</span>
+                                            </span>
                                             <span class="text-emerald-400 font-semibold">Rp {{ number_format($it->subtotal, 0, ',', '.') }}</span>
                                         </div>
                                         @if($it->diskon_rupiah > 0)
-                                            <div class="text-[10px] text-red-400">Diskon/Raf: -Rp {{ number_format($it->diskon_rupiah, 0, ',', '.') }}</div>
+                                            <div class="text-[10px] text-red-400 mt-0.5">Diskon/Raf: -Rp {{ number_format($it->diskon_rupiah, 0, ',', '.') }}</div>
                                         @endif
                                     </div>
                                 @endforeach
@@ -154,9 +156,22 @@
                             <span class="text-gray-400 text-xs italic">-</span>
                         @endif
                     </td>
-                    <td class="px-3 py-2.5 text-right font-medium text-white text-xs whitespace-nowrap">
-                        <span class="font-bold">{{ number_format($s->total_qty, 1) }}</span> <span class="text-gray-400 text-[10px]">Kg</span>
+
+                    {{-- Qty Gudang --}}
+                    <td class="px-3 py-2.5 text-right font-medium text-amber-300 text-xs whitespace-nowrap">
+                        <span class="font-bold">{{ number_format($s->items->sum(fn($it) => $it->qty_gudang ?? $it->qty_terjual), 1, ',', '.') }}</span> <span class="text-gray-400 text-[10px]">Kg</span>
                     </td>
+
+                    {{-- Qty Terjual --}}
+                    <td class="px-3 py-2.5 text-right font-medium text-emerald-400 text-xs whitespace-nowrap">
+                        <span class="font-bold">{{ number_format($s->total_qty, 1, ',', '.') }}</span> <span class="text-gray-400 text-[10px]">Kg</span>
+                    </td>
+
+                    {{-- Jml Sak --}}
+                    <td class="px-3 py-2.5 text-center font-medium text-sky-300 text-xs whitespace-nowrap">
+                        <span class="font-bold">{{ number_format($s->total_sak > 0 ? $s->total_sak : $s->items->sum('jumlah_sak'), 0, ',', '.') }}</span> <span class="text-gray-400 text-[10px]">sak</span>
+                    </td>
+
                     <td class="px-3 py-2.5 text-right font-bold text-white text-xs whitespace-nowrap">Rp {{ number_format($s->tagihan, 0, ',', '.') }}</td>
                     <td class="px-3 py-2.5 text-right font-medium text-emerald-400 text-xs whitespace-nowrap">Rp {{ number_format($s->payment, 0, ',', '.') }}</td>
 
@@ -198,31 +213,33 @@
                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-900/70 text-red-300 border border-red-700">BELUM</span>
                         @endif
                     </td>
-                    <td class="px-3 py-2.5 text-center whitespace-nowrap">
-                        <div class="flex items-center justify-center gap-1">
-                            <a href="{{ route('cugil.sales.so', $s->id) }}" target="_blank" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Sales Order (SO)">
-                                <i class="fas fa-file-contract mr-1"></i>SO
-                            </a>
-                            <a href="{{ route('cugil.sales.surat-jalan', $s->id) }}" target="_blank" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Surat Jalan / DO">
-                                <i class="fas fa-truck mr-1"></i>DO
-                            </a>
-                            <a href="{{ route('cugil.sales.invoice', $s->id) }}" target="_blank" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Commercial Invoice">
-                                <i class="fas fa-file-invoice-dollar mr-1"></i>Inv
-                            </a>
-                            <a href="{{ route('cugil.sales.faktur-pajak', $s->id) }}" target="_blank" class="px-2 py-1 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white rounded text-xs transition font-semibold" title="Cetak Faktur Pajak (PPN)">
-                                <i class="fas fa-stamp mr-1"></i>Pajak
-                            </a>
+                    <td class="px-2 py-2 text-center whitespace-nowrap">
+                        <div class="flex flex-col gap-1 items-center justify-center">
+                            {{-- Dokumen Cetak Compact Group --}}
+                            <div class="inline-flex rounded-md shadow-sm border border-slate-700/80 overflow-hidden" role="group">
+                                <a href="{{ route('cugil.sales.so', $s->id) }}" target="_blank" class="px-1.5 py-0.5 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white text-[10px] font-bold border-r border-slate-700/80 transition" title="Cetak Sales Order (SO)">SO</a>
+                                <a href="{{ route('cugil.sales.surat-jalan', $s->id) }}" target="_blank" class="px-1.5 py-0.5 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white text-[10px] font-bold border-r border-slate-700/80 transition" title="Cetak Surat Jalan / DO">DO</a>
+                                <a href="{{ route('cugil.sales.invoice', $s->id) }}" target="_blank" class="px-1.5 py-0.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-[10px] font-bold border-r border-slate-700/80 transition" title="Cetak Commercial Invoice">Inv</a>
+                                <a href="{{ route('cugil.sales.faktur-pajak', $s->id) }}" target="_blank" class="px-1.5 py-0.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white text-[10px] font-bold transition" title="Cetak Faktur Pajak (PPN)">Pajak</a>
+                            </div>
+
                             @if(auth()->user()->canMutate())
-                            <button onclick="document.getElementById('modalBayarSale{{ $s->id }}').classList.remove('hidden')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition" title="Update Pelunasan & Data">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <form action="{{ route('cugil.sales.destroy', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS penjualan {{ $s->id_penjualan }}?\n\nSemua stok barang yang keluar pada penjualan ini akan OTOMATIS DI-ROLLBACK (dikembalikan) ke stok gudang!')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="px-2 py-1 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded text-xs transition" title="Hapus Penjualan & Rollback Stok">
-                                    <i class="fas fa-trash-can"></i>
+                            {{-- Operasional Aksi: Edit, Pelunasan, Hapus --}}
+                            <div class="inline-flex items-center gap-1">
+                                <button type="button" onclick="bukaModalEditSale({{ json_encode($s) }})" class="px-1.5 py-0.5 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 rounded text-[10px] font-bold transition flex items-center gap-0.5 border border-amber-500/30" title="Edit Transaksi Penjualan">
+                                    <i class="fas fa-edit text-[9px]"></i> Edit
                                 </button>
-                            </form>
+                                <button type="button" onclick="document.getElementById('modalBayarSale{{ $s->id }}').classList.remove('hidden')" class="px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] transition border border-slate-600" title="Update Pelunasan & Slip Timbangan">
+                                    <i class="fas fa-coins text-[9px]"></i>
+                                </button>
+                                <form action="{{ route('cugil.sales.destroy', $s->id) }}" method="POST" class="inline" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS penjualan {{ $s->id_penjualan }}?\n\nSemua stok barang yang keluar pada penjualan ini akan OTOMATIS DI-ROLLBACK (dikembalikan) ke stok gudang!')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-1.5 py-0.5 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded text-[10px] transition border border-rose-500/30" title="Hapus Penjualan & Rollback Stok">
+                                        <i class="fas fa-trash-can text-[9px]"></i>
+                                    </button>
+                                </form>
+                            </div>
                             @endif
                         </div>
                     </td>
@@ -291,7 +308,7 @@
                 </div>
                 @empty
                 <tr>
-                    <td colspan="12" class="px-4 py-10 text-center text-gray-500">
+                    <td colspan="14" class="px-4 py-10 text-center text-gray-500">
                         <i class="fas fa-inbox text-3xl mb-2 text-gray-600"></i>
                         <p>Belum ada data transaksi penjualan.</p>
                     </td>
@@ -330,18 +347,20 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Kastamer (1 Pembeli) *</label>
-                    <select name="kode_customer" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
-                        <option value="">-- Pilih Kastamer --</option>
-                        @foreach($customers as $cust)
-                            <option value="{{ $cust->kode_customer }}">{{ $cust->kode_customer }} - {{ $cust->nama_customer }} ({{ $cust->kota }})</option>
-                        @endforeach
-                    </select>
+                    <input type="text" name="kode_customer" list="listCustomerSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Kastamer..." required>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal Kirim</label>
                     <input type="date" name="tanggal_kirim" value="{{ date('Y-m-d') }}" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
                 </div>
             </div>
+
+            <datalist id="listCustomerSale">
+                @foreach($customers as $cust)
+                    <option value="{{ $cust->kode_customer }}">{{ $cust->nama_customer }} ({{ $cust->kota }})</option>
+                    <option value="{{ $cust->nama_customer }}">{{ $cust->kode_customer }} - {{ $cust->kota }}</option>
+                @endforeach
+            </datalist>
 
             {{-- Detail Items (Multi-SKU Produk Cacahan) --}}
             <div class="space-y-3">
@@ -356,10 +375,14 @@
 
                 <div id="containerItemSale" class="space-y-2">
                     {{-- Row 1 default --}}
-                    <div class="item-sale-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                        <div class="md:col-span-4">
+                    <div class="item-sale-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
+                        <div class="md:col-span-3">
                             <label class="block text-[11px] text-gray-400 mb-1">Pilih / Nama Produk Cacahan *</label>
                             <input type="text" name="items[0][nama_barang]" list="listBarangSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="HD Gilingan Hitam/PE/PP" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] text-gray-400 mb-1">Qty Gudang (Kg)</label>
+                            <input type="number" step="0.01" name="items[0][qty_gudang]" class="sale-row-qty-gudang w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-[11px] text-gray-400 mb-1">Qty Terjual (Kg) *</label>
@@ -376,10 +399,6 @@
                         <div class="md:col-span-1">
                             <label class="block text-[11px] text-gray-400 mb-1">Rafaksi (%)</label>
                             <input type="number" step="0.01" name="items[0][diskon_persen]" oninput="hitungSemuaSale()" class="sale-row-diskon w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs" placeholder="0.15">
-                        </div>
-                        <div class="md:col-span-1">
-                            <label class="block text-[11px] text-gray-400 mb-1">Net</label>
-                            <input type="text" readonly class="sale-row-subtotal w-full bg-gray-950 border border-gray-800 text-emerald-400 font-bold rounded px-2 py-1.5 text-xs" value="Rp 0">
                         </div>
                         <div class="md:col-span-1 flex justify-center pb-1">
                             <button type="button" onclick="hapusBarisItemSale(this)" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Hapus Baris">
@@ -463,6 +482,130 @@
                 </button>
                 <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-md">
                     <i class="fas fa-save mr-1.5"></i>Simpan Faktur Penjualan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Edit Penjualan (Multi-SKU) --}}
+<div id="modalEditSale" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-gray-800 rounded-xl p-6 w-full max-w-4xl border border-gray-700 shadow-2xl my-8">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-700 mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-edit text-amber-400"></i> Edit Transaksi Penjualan CUGIL
+            </h3>
+            <button type="button" onclick="document.getElementById('modalEditSale').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <form id="formEditSale" method="POST" enctype="multipart/form-data" class="space-y-4">
+            @csrf
+            @method('PUT')
+            
+            {{-- Header Form --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">ID / No Penjualan (Otomatis)</label>
+                    <input type="text" id="edit_sale_id_penjualan" readonly class="w-full bg-gray-950 border border-gray-700 text-emerald-400 font-mono text-sm rounded-lg px-3 py-2 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal Transaksi *</label>
+                    <input type="date" id="edit_sale_tanggal" name="tanggal" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Kastamer (1 Pembeli) *</label>
+                    <input type="text" id="edit_sale_kode_customer" name="kode_customer" list="listCustomerSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Kastamer..." required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal Kirim</label>
+                    <input type="date" id="edit_sale_tanggal_kirim" name="tanggal_kirim" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            {{-- Detail Items (Multi-SKU Produk Cacahan) --}}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wider">
+                        <i class="fas fa-boxes mr-1.5"></i>Daftar SKU Barang yang Dijual
+                    </h4>
+                    <button type="button" onclick="tambahBarisItemEditSale()" class="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600 border border-amber-500 text-amber-300 hover:text-white rounded-lg text-xs font-semibold transition">
+                        <i class="fas fa-plus mr-1"></i>+ Tambah Item Barang
+                    </button>
+                </div>
+
+                <div id="containerEditItemSale" class="space-y-2">
+                    {{-- Dynamically populated via JS --}}
+                </div>
+            </div>
+
+            {{-- Footer Summary: Ongkos Angkut, Tagihan, Payment, Fee Makelar --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Ongkos Angkut (1 Armada)</label>
+                    <input type="number" step="0.01" id="edit_sale_ongkos_angkut" name="ongkos_angkut" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Total Tagihan Net Penjualan</label>
+                    <input type="text" id="edit_sale_grand_total_display" readonly class="w-full bg-gray-950 border border-gray-700 text-emerald-400 font-black text-base rounded-lg px-3 py-2" value="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Payment Diterima (Rp)</label>
+                    <input type="number" step="0.01" id="edit_sale_payment" name="payment" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Fee Makelar / Broker (Rp)</label>
+                    <input type="number" step="0.01" id="edit_sale_fee_makelar" name="fee_makelar" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Nama Broker / Makelar</label>
+                    <input type="text" id="edit_sale_broker" name="broker" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="ARIS / REZA / dll">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Truk Ekspedisi</label>
+                    <input type="text" id="edit_sale_truk" name="truk" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Fuso / Nopol Truk">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Sales PIC</label>
+                    <input type="text" id="edit_sale_sales" name="sales" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            {{-- Lampiran Foto Slip Timbangan --}}
+            <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-4 rounded-xl border border-cyan-500/30">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <label class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                        <i class="fas fa-camera text-base text-cyan-400"></i>
+                        <span>Lampiran Foto Hasil Timbangan Kastamer (Afuk / Mitra)</span>
+                    </label>
+                    <span class="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                        <i class="fas fa-compress-arrows-alt text-[10px]"></i> Auto-Compression Engine (~90% Hemat Server)
+                    </span>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <input type="file" name="foto_timbangan" id="inputFotoTimbanganEdit" accept="image/*" onchange="previewFotoTimbangan(this, 'previewFotoContainerEdit')" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500 cursor-pointer">
+                    <div id="previewFotoContainerEdit" class="hidden shrink-0">
+                        <img id="imgPreviewEdit" src="" alt="Preview" class="h-16 w-16 object-cover rounded-lg border-2 border-cyan-400 shadow">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1">Catatan Tambahan</label>
+                <input type="text" id="edit_sale_remark" name="remark" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="No bukti timbang, kondisi cacahan, dll...">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-700">
+                <button type="button" onclick="document.getElementById('modalEditSale').classList.add('hidden')" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow-md">
+                    <i class="fas fa-save mr-1.5"></i>Simpan Perubahan Penjualan
                 </button>
             </div>
         </form>
@@ -583,11 +726,15 @@ let saleItemIndex = 1;
 function tambahBarisItemSale() {
     const container = document.getElementById('containerItemSale');
     const div = document.createElement('div');
-    div.className = 'item-sale-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+    div.className = 'item-sale-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end';
     div.innerHTML = `
-        <div class="md:col-span-4">
+        <div class="md:col-span-3">
             <label class="block text-[11px] text-gray-400 mb-1">Pilih / Nama Produk Cacahan *</label>
             <input type="text" name="items[${saleItemIndex}][nama_barang]" list="listBarangSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="HD Gilingan Hitam/PE/PP" required>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Qty Gudang (Kg)</label>
+            <input type="number" step="0.01" name="items[${saleItemIndex}][qty_gudang]" class="sale-row-qty-gudang w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0">
         </div>
         <div class="md:col-span-2">
             <label class="block text-[11px] text-gray-400 mb-1">Qty Terjual (Kg) *</label>
@@ -604,10 +751,6 @@ function tambahBarisItemSale() {
         <div class="md:col-span-1">
             <label class="block text-[11px] text-gray-400 mb-1">Rafaksi (%)</label>
             <input type="number" step="0.01" name="items[${saleItemIndex}][diskon_persen]" oninput="hitungSemuaSale()" class="sale-row-diskon w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs" placeholder="0.15">
-        </div>
-        <div class="md:col-span-1">
-            <label class="block text-[11px] text-gray-400 mb-1">Net</label>
-            <input type="text" readonly class="sale-row-subtotal w-full bg-gray-950 border border-gray-800 text-emerald-400 font-bold rounded px-2 py-1.5 text-xs" value="Rp 0">
         </div>
         <div class="md:col-span-1 flex justify-center pb-1">
             <button type="button" onclick="hapusBarisItemSale(this)" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Hapus Baris">
@@ -640,11 +783,132 @@ function hitungSemuaSale() {
         const subtotalAwal = qty * harga;
         const diskonRp = subtotalAwal * diskonP;
         const subtotalNet = Math.max(0, subtotalAwal - diskonRp);
-        row.querySelector('.sale-row-subtotal').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(subtotalNet);
         grandTotal += subtotalNet;
     });
 
     document.getElementById('sale_grand_total_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
+}
+
+let editSaleItemIndex = 0;
+
+function bukaModalEditSale(sale) {
+    document.getElementById('formEditSale').action = `/cugil/sales/${sale.id}`;
+    document.getElementById('edit_sale_id_penjualan').value = sale.id_penjualan || '';
+    
+    if (sale.tanggal) {
+        document.getElementById('edit_sale_tanggal').value = String(sale.tanggal).substr(0, 10);
+    }
+    if (sale.tanggal_kirim) {
+        document.getElementById('edit_sale_tanggal_kirim').value = String(sale.tanggal_kirim).substr(0, 10);
+    } else {
+        document.getElementById('edit_sale_tanggal_kirim').value = sale.tanggal ? String(sale.tanggal).substr(0, 10) : '';
+    }
+
+    document.getElementById('edit_sale_kode_customer').value = sale.customer ? sale.customer.nama_customer : (sale.nama_buyer || sale.kode_customer || '');
+    document.getElementById('edit_sale_ongkos_angkut').value = sale.ongkos_angkut || '';
+    document.getElementById('edit_sale_payment').value = sale.payment || '';
+    document.getElementById('edit_sale_fee_makelar').value = sale.fee_makelar || '';
+    document.getElementById('edit_sale_broker').value = sale.broker || '';
+    document.getElementById('edit_sale_truk').value = sale.truk || '';
+    document.getElementById('edit_sale_sales').value = sale.sales || 'ACH. CHUMAIDI';
+    document.getElementById('edit_sale_remark').value = sale.remark || '';
+
+    const previewContainer = document.getElementById('previewFotoContainerEdit');
+    if (sale.foto_timbangan_url) {
+        previewContainer.querySelector('img').src = sale.foto_timbangan_url;
+        previewContainer.classList.remove('hidden');
+    } else {
+        previewContainer.classList.add('hidden');
+    }
+
+    const container = document.getElementById('containerEditItemSale');
+    container.innerHTML = '';
+    editSaleItemIndex = 0;
+
+    if (sale.items && sale.items.length > 0) {
+        sale.items.forEach(item => {
+            tambahBarisItemEditSale(item);
+        });
+    } else {
+        tambahBarisItemEditSale();
+    }
+
+    hitungSemuaEditSale();
+    document.getElementById('modalEditSale').classList.remove('hidden');
+}
+
+function tambahBarisItemEditSale(item = null) {
+    const container = document.getElementById('containerEditItemSale');
+    const div = document.createElement('div');
+    div.className = 'edit-item-sale-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end';
+    
+    const namaBarang = item ? (item.nama_barang || '') : '';
+    const qtyGudang = item ? (item.qty_gudang ?? item.qty_terjual ?? '') : '';
+    const qtyTerjual = item ? (item.qty_terjual || '') : '';
+    const jumlahSak = item ? (item.jumlah_sak || '') : '';
+    const hargaSatuan = item ? (item.harga_satuan || '') : '';
+    const diskonPersen = item ? (item.diskon_persen || '') : '';
+
+    div.innerHTML = `
+        <div class="md:col-span-3">
+            <label class="block text-[11px] text-gray-400 mb-1">Pilih / Nama Produk Cacahan *</label>
+            <input type="text" name="items[${editSaleItemIndex}][nama_barang]" value="${namaBarang}" list="listBarangSale" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="HD Gilingan Hitam/PE/PP" required>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Qty Gudang (Kg)</label>
+            <input type="number" step="0.01" name="items[${editSaleItemIndex}][qty_gudang]" value="${qtyGudang}" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0">
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Qty Terjual (Kg) *</label>
+            <input type="number" step="0.01" name="items[${editSaleItemIndex}][qty_terjual]" value="${qtyTerjual}" oninput="hitungSemuaEditSale()" class="edit-sale-row-qty w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0" required>
+        </div>
+        <div class="md:col-span-1">
+            <label class="block text-[11px] text-gray-400 mb-1">Jml Sak</label>
+            <input type="number" name="items[${editSaleItemIndex}][jumlah_sak]" value="${jumlahSak}" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs" placeholder="0">
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Harga/Kg (Rp) *</label>
+            <input type="number" step="0.01" name="items[${editSaleItemIndex}][harga_satuan]" value="${hargaSatuan}" oninput="hitungSemuaEditSale()" class="edit-sale-row-harga w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="Rp 0" required>
+        </div>
+        <div class="md:col-span-1">
+            <label class="block text-[11px] text-gray-400 mb-1">Rafaksi (%)</label>
+            <input type="number" step="0.01" name="items[${editSaleItemIndex}][diskon_persen]" value="${diskonPersen}" oninput="hitungSemuaEditSale()" class="edit-sale-row-diskon w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs" placeholder="0.15">
+        </div>
+        <div class="md:col-span-1 flex justify-center pb-1">
+            <button type="button" onclick="hapusBarisItemEditSale(this)" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Hapus Baris">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(div);
+    editSaleItemIndex++;
+}
+
+function hapusBarisItemEditSale(btn) {
+    const rows = document.querySelectorAll('.edit-item-sale-row');
+    if (rows.length > 1) {
+        btn.closest('.edit-item-sale-row').remove();
+        hitungSemuaEditSale();
+    } else {
+        alert('Minimal harus ada 1 item barang yang dijual.');
+    }
+}
+
+function hitungSemuaEditSale() {
+    const rows = document.querySelectorAll('.edit-item-sale-row');
+    let grandTotal = 0;
+
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.edit-sale-row-qty').value) || 0;
+        const harga = parseFloat(row.querySelector('.edit-sale-row-harga').value) || 0;
+        const diskonP = parseFloat(row.querySelector('.edit-sale-row-diskon').value) || 0;
+        const subtotalAwal = qty * harga;
+        const diskonRp = subtotalAwal * diskonP;
+        const subtotalNet = Math.max(0, subtotalAwal - diskonRp);
+        grandTotal += subtotalNet;
+    });
+
+    document.getElementById('edit_sale_grand_total_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
 }
 
 function previewFotoTimbangan(input, previewContainerId) {

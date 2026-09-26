@@ -68,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('po')->name('po.')->group(function () {
             Route::get('/',             [CugilTransaksiController::class, 'purchaseOrders'])->name('index');
             Route::post('/',            [CugilTransaksiController::class, 'storePurchaseOrder'])->name('store');
+            Route::put('/{id}',         [CugilTransaksiController::class, 'updatePurchaseOrder'])->name('update');
             Route::get('/{id}/print',   [CugilTransaksiController::class, 'printPurchaseOrder'])->name('print');
             Route::delete('/{id}',      [CugilTransaksiController::class, 'destroyPurchaseOrder'])->name('destroy');
         });
@@ -76,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('raw')->name('raw.')->group(function () {
             Route::get('/',                 [CugilTransaksiController::class, 'rawMaterials'])->name('index');
             Route::post('/',                [CugilTransaksiController::class, 'storeRawMaterial'])->name('store');
+            Route::put('/{id}',             [CugilTransaksiController::class, 'updateRawMaterial'])->name('update');
             Route::put('/{id}/status',      [CugilTransaksiController::class, 'updateRawMaterialStatus'])->name('updateStatus');
             Route::get('/{id}/tanda-terima',[CugilTransaksiController::class, 'printTandaTerimaRaw'])->name('tanda-terima');
             Route::delete('/{id}',          [CugilTransaksiController::class, 'destroyRawMaterial'])->name('destroy');
@@ -85,6 +87,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('sales')->name('sales.')->group(function () {
             Route::get('/',                 [CugilTransaksiController::class, 'sales'])->name('index');
             Route::post('/',                [CugilTransaksiController::class, 'storeSale'])->name('store');
+            Route::put('/{id}',             [CugilTransaksiController::class, 'updateSale'])->name('update');
             Route::put('/{id}/status',      [CugilTransaksiController::class, 'updateSaleStatus'])->name('updateStatus');
             Route::post('/{id}/upload-timbangan', [CugilTransaksiController::class, 'uploadFotoTimbangan'])->name('uploadTimbangan');
             Route::delete('/{id}/delete-timbangan', [CugilTransaksiController::class, 'deleteFotoTimbangan'])->name('deleteTimbangan');

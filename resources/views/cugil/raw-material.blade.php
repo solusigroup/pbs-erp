@@ -203,6 +203,9 @@
                                 <i class="fas fa-print mr-1"></i>Bukti
                             </a>
                             @if(auth()->user()->canMutate())
+                            <button type="button" onclick="bukaModalEditRaw({{ json_encode($raw) }})" class="px-2 py-1 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white rounded text-xs transition font-semibold" title="Edit Penerimaan Bahan Baku">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
                             <button onclick="document.getElementById('modalBayarRaw{{ $raw->id }}').classList.remove('hidden')" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-xs transition" title="Update Pelunasan">
                                 <i class="fas fa-money-bill-wave mr-1"></i>Bayar
                             </button>
@@ -308,18 +311,20 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Pemasok / Supplier (1 Pengirim) *</label>
-                    <select id="raw_kode_supplier" name="kode_supplier" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
-                        <option value="">-- Pilih Supplier --</option>
-                        @foreach($suppliers as $sup)
-                            <option value="{{ $sup->kode_supplier }}">{{ $sup->kode_supplier }} - {{ $sup->nama_supplier }} ({{ $sup->kota }})</option>
-                        @endforeach
-                    </select>
+                    <input type="text" id="raw_kode_supplier" name="kode_supplier" list="listSupplierRaw" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Supplier..." required>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Batch Produksi</label>
                     <input type="text" id="raw_batch" name="batch_produksi" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Contoh: 05-BUDI / 3-ARIS">
                 </div>
             </div>
+
+            <datalist id="listSupplierRaw">
+                @foreach($suppliers as $sup)
+                    <option value="{{ $sup->kode_supplier }}">{{ $sup->nama_supplier }} ({{ $sup->kota }})</option>
+                    <option value="{{ $sup->nama_supplier }}">{{ $sup->kode_supplier }} - {{ $sup->kota }}</option>
+                @endforeach
+            </datalist>
 
             {{-- Detail Items (Multi-SKU Bahan Masuk) --}}
             <div class="space-y-3">
@@ -407,6 +412,100 @@
                 </button>
                 <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow-md">
                     <i class="fas fa-save mr-1.5"></i>Simpan Penerimaan Bahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Edit Penerimaan Bahan Baku (RAW) --}}
+<div id="modalEditRaw" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-gray-800 rounded-xl p-6 w-full max-w-4xl border border-gray-700 shadow-2xl my-8">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-700 mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-edit text-amber-400"></i> Edit Penerimaan Bahan Baku (RAW) &mdash; <span id="edit_raw_ref_display" class="text-amber-400 font-mono"></span>
+            </h3>
+            <button type="button" onclick="document.getElementById('modalEditRaw').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <form id="formEditRaw" action="" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+            {{-- Header Form --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Nomor PO / Ref <span class="text-amber-400 text-[10px]">(Read-only)</span></label>
+                    <input type="text" id="edit_raw_nomor_po" class="w-full bg-gray-950 border border-gray-800 text-gray-400 font-mono rounded-lg px-3 py-2 text-sm cursor-not-allowed" readonly disabled>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal Timbang *</label>
+                    <input type="date" id="edit_raw_tanggal" name="tanggal" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Pemasok / Supplier *</label>
+                    <input type="text" id="edit_raw_kode_supplier" name="kode_supplier" list="listSupplierRaw" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Supplier..." required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Batch Produksi</label>
+                    <input type="text" id="edit_raw_batch" name="batch_produksi" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            {{-- Detail Items (Multi-SKU Bahan Masuk) --}}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wider">
+                        <i class="fas fa-boxes mr-1.5"></i>Daftar SKU Bahan yang Ditimbang Masuk
+                    </h4>
+                    <button type="button" onclick="tambahBarisItemEditRaw()" class="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600 border border-amber-500 text-amber-300 hover:text-white rounded-lg text-xs font-semibold transition">
+                        <i class="fas fa-plus mr-1"></i>+ Tambah Item Bahan
+                    </button>
+                </div>
+
+                <div id="containerEditItemRaw" class="space-y-2">
+                    {{-- Populated by JS --}}
+                </div>
+            </div>
+
+            {{-- Summary & Financial Inputs --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Ongkos Angkut Armada (Rp)</label>
+                    <input type="number" step="0.01" id="edit_raw_ongkos_angkut" name="ongkos_angkut" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Pembayaran Kas (DP/Pelunasan)</label>
+                    <input type="number" step="0.01" id="edit_raw_payment" name="payment" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Total Tagihan Net</label>
+                    <input type="text" id="edit_raw_tagihan_display" readonly class="w-full bg-gray-950 border border-gray-700 text-amber-400 font-black text-base rounded-lg px-3 py-2" value="Rp 0">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Keterangan Armada Truk</label>
+                    <input type="text" id="edit_raw_truk" name="truk" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="No Pol / Sopir">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Petugas Timbang</label>
+                    <input type="text" id="edit_raw_petugas" name="petugas" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Catatan Tambahan</label>
+                    <input type="text" id="edit_raw_remark" name="remark" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-700">
+                <button type="button" onclick="document.getElementById('modalEditRaw').classList.add('hidden')" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium shadow-md">
+                    <i class="fas fa-save mr-1.5"></i>Simpan Perubahan RAW
                 </button>
             </div>
         </form>
@@ -545,6 +644,102 @@ function hitungSemuaRaw() {
     });
 
     document.getElementById('raw_grand_total_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
+}
+
+let editRawItemIndex = 0;
+
+function bukaModalEditRaw(raw) {
+    document.getElementById('formEditRaw').action = "/cugil/raw/" + raw.id;
+    document.getElementById('edit_raw_ref_display').innerText = raw.nomor_po || ('RAW-' + raw.id);
+    document.getElementById('edit_raw_nomor_po').value = raw.nomor_po || ('RAW-' + raw.id);
+
+    let tgl = raw.tanggal ? raw.tanggal.split('T')[0] : '';
+    document.getElementById('edit_raw_tanggal').value = tgl;
+    document.getElementById('edit_raw_kode_supplier').value = raw.kode_supplier;
+    document.getElementById('edit_raw_batch').value = raw.batch_produksi || '';
+    document.getElementById('edit_raw_ongkos_angkut').value = raw.ongkos_angkut || 0;
+    document.getElementById('edit_raw_payment').value = raw.payment || 0;
+    document.getElementById('edit_raw_truk').value = raw.truk || '';
+    document.getElementById('edit_raw_petugas').value = raw.petugas || '';
+    document.getElementById('edit_raw_remark').value = raw.remark || '';
+
+    const container = document.getElementById('containerEditItemRaw');
+    container.innerHTML = '';
+    editRawItemIndex = 0;
+
+    if (raw.items && raw.items.length > 0) {
+        raw.items.forEach(it => {
+            tambahBarisItemEditRaw(it.nama_barang, it.qty, it.satuan, it.harga_satuan, it.diskon_rafaksi, it.catatan, it.kode_barang);
+        });
+    } else {
+        tambahBarisItemEditRaw();
+    }
+
+    hitungSemuaEditRaw();
+    document.getElementById('modalEditRaw').classList.remove('hidden');
+}
+
+function tambahBarisItemEditRaw(namaBarang = '', qty = '', satuan = 'Kg', hargaSatuan = '', diskonRafaksi = 0, catatan = '', kodeBarang = '') {
+    const container = document.getElementById('containerEditItemRaw');
+    const div = document.createElement('div');
+    div.className = 'item-raw-edit-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+    div.innerHTML = `
+        <div class="md:col-span-4">
+            <label class="block text-[11px] text-gray-400 mb-1">Pilih / Nama Bahan Baku *</label>
+            <input type="text" name="items[${editRawItemIndex}][nama_barang]" value="${namaBarang}" list="listBarangRaw" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="Contoh: HD Kresek Putih/Merah" required>
+            <input type="hidden" name="items[${editRawItemIndex}][kode_barang]" value="${kodeBarang}">
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Qty Timbang (Kg) *</label>
+            <input type="number" step="0.01" name="items[${editRawItemIndex}][qty]" value="${qty}" oninput="hitungSemuaEditRaw()" class="raw-edit-row-qty w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs font-bold" placeholder="0" required>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Harga Satuan (Rp) *</label>
+            <input type="number" step="0.01" name="items[${editRawItemIndex}][harga_satuan]" value="${hargaSatuan}" oninput="hitungSemuaEditRaw()" class="raw-edit-row-harga w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="Rp 0" required>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Rafaksi/Kotor (Rp)</label>
+            <input type="number" step="0.01" name="items[${editRawItemIndex}][diskon_rafaksi]" value="${diskonRafaksi}" oninput="hitungSemuaEditRaw()" class="raw-edit-row-rafaksi w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0">
+        </div>
+        <div class="md:col-span-1">
+            <label class="block text-[11px] text-gray-400 mb-1">Net</label>
+            <input type="text" readonly class="raw-edit-row-subtotal w-full bg-gray-950 border border-gray-800 text-amber-400 font-bold rounded px-2 py-1.5 text-xs" value="Rp 0">
+        </div>
+        <div class="md:col-span-1 flex justify-center pb-1">
+            <button type="button" onclick="hapusBarisItemEditRaw(this)" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Hapus Baris">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(div);
+    editRawItemIndex++;
+    hitungSemuaEditRaw();
+}
+
+function hapusBarisItemEditRaw(btn) {
+    const rows = document.querySelectorAll('.item-raw-edit-row');
+    if (rows.length > 1) {
+        btn.closest('.item-raw-edit-row').remove();
+        hitungSemuaEditRaw();
+    } else {
+        alert('Minimal harus ada 1 item bahan baku.');
+    }
+}
+
+function hitungSemuaEditRaw() {
+    const rows = document.querySelectorAll('.item-raw-edit-row');
+    let totalTagihan = 0;
+
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.raw-edit-row-qty').value) || 0;
+        const harga = parseFloat(row.querySelector('.raw-edit-row-harga').value) || 0;
+        const raf = parseFloat(row.querySelector('.raw-edit-row-rafaksi').value) || 0;
+        const subtotal = Math.max(0, (qty * harga) - raf);
+        row.querySelector('.raw-edit-row-subtotal').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(subtotal);
+        totalTagihan += subtotal;
+    });
+
+    document.getElementById('edit_raw_tagihan_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(totalTagihan);
 }
 
 // Auto-open modal if URL has ?tarik_po=

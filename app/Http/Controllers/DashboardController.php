@@ -63,8 +63,8 @@ class DashboardController extends Controller
         $cugilTotalRawPayment = CugilRawMaterial::sum('payment');
         $cugilTotalSupplier = CugilSupplier::count();
         $cugilTotalCustomer = CugilCustomer::count();
-        $cugilRecentSales = CugilSale::latest('tanggal')->take(5)->get();
-        $cugilRecentRaw = CugilRawMaterial::latest('tanggal')->take(5)->get();
+        $cugilRecentSales = CugilSale::with('items')->latest('tanggal')->take(5)->get();
+        $cugilRecentRaw = CugilRawMaterial::with('items')->latest('tanggal')->take(5)->get();
 
         return view('dashboard', compact(
             'user',

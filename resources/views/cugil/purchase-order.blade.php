@@ -168,6 +168,9 @@
                                 </a>
                             @endif
                             @if(auth()->user()->canMutate())
+                            <button type="button" onclick="bukaModalEditPO({{ json_encode($po) }})" class="inline-flex items-center px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition" title="Edit Purchase Order">
+                                <i class="fas fa-edit mr-1"></i>Edit PO
+                            </button>
                             <form action="{{ route('cugil.po.destroy', $po->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS Purchase Order {{ $po->nomor_po }}?')">
                                 @csrf
                                 @method('DELETE')
@@ -220,14 +223,16 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Pilih Supplier (1 Supplier) *</label>
-                    <select name="kode_supplier" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
-                        <option value="">-- Pilih Supplier --</option>
-                        @foreach($suppliers as $sup)
-                            <option value="{{ $sup->kode_supplier }}">{{ $sup->kode_supplier }} - {{ $sup->nama_supplier }} ({{ $sup->kota }})</option>
-                        @endforeach
-                    </select>
+                    <input type="text" name="kode_supplier" list="listSupplierPO" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Supplier..." required>
                 </div>
             </div>
+
+            <datalist id="listSupplierPO">
+                @foreach($suppliers as $sup)
+                    <option value="{{ $sup->kode_supplier }}">{{ $sup->nama_supplier }} ({{ $sup->kota }})</option>
+                    <option value="{{ $sup->nama_supplier }}">{{ $sup->kode_supplier }} - {{ $sup->kota }}</option>
+                @endforeach
+            </datalist>
 
             {{-- Detail Items (Multi-SKU) --}}
             <div class="space-y-3">
@@ -323,8 +328,101 @@
     </div>
 </div>
 
+{{-- Modal Edit PO --}}
+<div id="modalEditPO" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-gray-800 rounded-xl p-6 w-full max-w-4xl border border-gray-700 shadow-2xl my-8">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-700 mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-edit text-indigo-400"></i> Edit Purchase Order (PO) &mdash; <span id="edit_po_nomor_display" class="text-amber-400 font-mono"></span>
+            </h3>
+            <button type="button" onclick="document.getElementById('modalEditPO').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <form id="formEditPO" action="" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+            {{-- Header Form --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Nomor PO <span class="text-amber-400 text-[10px]">(Read-only)</span></label>
+                    <input type="text" id="edit_po_nomor_po" class="w-full bg-gray-950 border border-gray-800 text-gray-400 font-mono rounded-lg px-3 py-2 text-sm cursor-not-allowed" readonly disabled>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal PO *</label>
+                    <input type="date" id="edit_po_tanggal" name="tanggal" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Pilih Supplier *</label>
+                    <input type="text" id="edit_po_kode_supplier" name="kode_supplier" list="listSupplierPO" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Ketik / Pilih Supplier" required>
+                </div>
+            </div>
+
+            {{-- Detail Items (Multi-SKU) --}}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-bold text-blue-400 uppercase tracking-wider">
+                        <i class="fas fa-boxes mr-1.5"></i>Daftar SKU Barang yang Dipesan
+                    </h4>
+                    <button type="button" onclick="tambahBarisItemEditPO()" class="px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600 border border-blue-500 text-blue-300 hover:text-white rounded-lg text-xs font-semibold transition">
+                        <i class="fas fa-plus mr-1"></i>+ Tambah Item Barang
+                    </button>
+                </div>
+
+                <div id="containerEditItemPO" class="space-y-2">
+                    {{-- Populated by JS --}}
+                </div>
+            </div>
+
+            {{-- Footer Summary & Transport --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Ongkos Angkut (Rp)</label>
+                    <input type="number" step="0.01" id="edit_po_ongkos_angkut" name="ongkos_angkut" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Rp 0">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Termin Payment</label>
+                    <select id="edit_po_termin_payment" name="termin_payment" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                        <option value="BELI PUTUS">BELI PUTUS</option>
+                        <option value="TEMPO">TEMPO</option>
+                        <option value="TIMBANG BAYAR">TIMBANG BAYAR</option>
+                        <option value="Cash">Cash</option>
+                        <option value="TITIPAN">TITIPAN</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Grand Total Nilai PO (Semua SKU)</label>
+                    <input type="text" id="edit_po_grand_total_display" readonly class="w-full bg-gray-950 border border-gray-700 text-emerald-400 font-black text-base rounded-lg px-3 py-2" value="Rp 0">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Petugas Pembelian</label>
+                    <input type="text" id="edit_po_petugas" name="petugas" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Catatan Tambahan</label>
+                    <input type="text" id="edit_po_keterangan" name="keterangan" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" placeholder="Catatan no truk, kondisi rafaksi, dll...">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-700">
+                <button type="button" onclick="document.getElementById('modalEditPO').classList.add('hidden')" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-md">
+                    <i class="fas fa-save mr-1.5"></i>Simpan Perubahan PO
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 let poItemIndex = 1;
+let editPoItemIndex = 0;
 
 function tambahBarisItemPO() {
     const container = document.getElementById('containerItemPO');
@@ -384,6 +482,97 @@ function hitungSemuaPO() {
     });
 
     document.getElementById('po_grand_total_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
+}
+
+function bukaModalEditPO(po) {
+    document.getElementById('formEditPO').action = "/cugil/po/" + po.id;
+    document.getElementById('edit_po_nomor_display').innerText = po.nomor_po;
+    document.getElementById('edit_po_nomor_po').value = po.nomor_po;
+    
+    let tgl = po.tanggal ? po.tanggal.split('T')[0] : '';
+    document.getElementById('edit_po_tanggal').value = tgl;
+    document.getElementById('edit_po_kode_supplier').value = po.kode_supplier;
+    document.getElementById('edit_po_ongkos_angkut').value = po.ongkos_angkut || 0;
+    document.getElementById('edit_po_termin_payment').value = po.termin_payment || 'BELI PUTUS';
+    document.getElementById('edit_po_petugas').value = po.petugas || '';
+    document.getElementById('edit_po_keterangan').value = po.keterangan || '';
+
+    const container = document.getElementById('containerEditItemPO');
+    container.innerHTML = '';
+    editPoItemIndex = 0;
+
+    if (po.items && po.items.length > 0) {
+        po.items.forEach(it => {
+            tambahBarisItemEditPO(it.nama_barang, it.qty, it.satuan, it.harga_satuan, it.catatan, it.kode_barang);
+        });
+    } else {
+        tambahBarisItemEditPO();
+    }
+
+    hitungSemuaEditPO();
+    document.getElementById('modalEditPO').classList.remove('hidden');
+}
+
+function tambahBarisItemEditPO(namaBarang = '', qty = '', satuan = 'Kg', hargaSatuan = '', catatan = '', kodeBarang = '') {
+    const container = document.getElementById('containerEditItemPO');
+    const div = document.createElement('div');
+    div.className = 'item-po-edit-row bg-gray-900/40 p-3 rounded-xl border border-gray-700 grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+    div.innerHTML = `
+        <div class="md:col-span-4">
+            <label class="block text-[11px] text-gray-400 mb-1">Pilih Barang Katalog / Nama Barang *</label>
+            <input type="text" name="items[${editPoItemIndex}][nama_barang]" value="${namaBarang}" list="listBarangPO" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="Ketik / Pilih nama barang" required>
+            <input type="hidden" name="items[${editPoItemIndex}][kode_barang]" value="${kodeBarang}">
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Qty *</label>
+            <input type="number" step="0.01" name="items[${editPoItemIndex}][qty]" value="${qty}" oninput="hitungSemuaEditPO()" class="po-edit-row-qty w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="0" required>
+        </div>
+        <div class="md:col-span-1">
+            <label class="block text-[11px] text-gray-400 mb-1">Satuan</label>
+            <input type="text" name="items[${editPoItemIndex}][satuan]" value="${satuan || 'Kg'}" class="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs">
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Harga Satuan (Rp) *</label>
+            <input type="number" step="0.01" name="items[${editPoItemIndex}][harga_satuan]" value="${hargaSatuan}" oninput="hitungSemuaEditPO()" class="po-edit-row-harga w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5 text-xs" placeholder="Rp 0" required>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-[11px] text-gray-400 mb-1">Subtotal</label>
+            <input type="text" readonly class="po-edit-row-subtotal w-full bg-gray-950 border border-gray-800 text-emerald-400 font-bold rounded px-2.5 py-1.5 text-xs" value="Rp 0">
+        </div>
+        <div class="md:col-span-1 flex justify-center pb-1">
+            <button type="button" onclick="hapusBarisItemEditPO(this)" class="text-red-400 hover:text-red-300 p-1 text-sm" title="Hapus Baris">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(div);
+    editPoItemIndex++;
+    hitungSemuaEditPO();
+}
+
+function hapusBarisItemEditPO(btn) {
+    const rows = document.querySelectorAll('.item-po-edit-row');
+    if (rows.length > 1) {
+        btn.closest('.item-po-edit-row').remove();
+        hitungSemuaEditPO();
+    } else {
+        alert('Minimal harus ada 1 item barang dalam Purchase Order.');
+    }
+}
+
+function hitungSemuaEditPO() {
+    const rows = document.querySelectorAll('.item-po-edit-row');
+    let grandTotal = 0;
+
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.po-edit-row-qty').value) || 0;
+        const harga = parseFloat(row.querySelector('.po-edit-row-harga').value) || 0;
+        const subtotal = qty * harga;
+        row.querySelector('.po-edit-row-subtotal').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(subtotal);
+        grandTotal += subtotal;
+    });
+
+    document.getElementById('edit_po_grand_total_display').value = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
 }
 </script>
 @endsection
