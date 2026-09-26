@@ -258,7 +258,7 @@ class WorkflowController extends Controller
             }
         }
 
-        return back()->with('success', "Berhasil membukukan {$generatedCount} jurnal untuk transaksi operasional (termasuk memorial transaksi titipan).");
+        return back()->with('success', "Berhasil membukukan {$generatedCount} jurnal untuk transaksi operasional (termasuk memorial titipan).");
     }
 
     /**

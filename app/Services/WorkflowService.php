@@ -346,8 +346,10 @@ class WorkflowService
         $salesWithJurnal = JurnalUmum::where('sumber_referensi', 'like', 'AUTO-PENJUALAN-SALE-%')->count();
         $unjournalizedSales = max(0, $salesCount - $salesWithJurnal);
 
-        // 4. Sales CUGIL tanpa foto timbangan
-        $salesNoTimbangan = CugilSale::whereNull('foto_timbangan')->orWhere('foto_timbangan', '')->count();
+        // 4. Sales CUGIL tanpa foto timbangan (khusus transaksi pasca-migrasi > 25 Sep 2026)
+        $salesNoTimbangan = CugilSale::where(function ($q) {
+            $q->whereNull('foto_timbangan')->orWhere('foto_timbangan', '');
+        })->where('tanggal', '>', '2026-09-25')->count();
 
         // 5. CUGIL PO yang belum disetujui / belum terima
         $poPendingReceive = CugilPurchaseOrder::where(function ($q) {
@@ -429,7 +431,6 @@ class WorkflowService
             $refKey = 'AUTO-PEMBELIAN-RAW-' . $raw->id;
             $hasJournal = JurnalUmum::where('sumber_referensi', $refKey)->exists();
             if (!$hasJournal) {
-                $isZero = (float) $raw->tagihan <= 0;
                 $results['raw_materials'][] = [
                     'id'             => $raw->id,
                     'tanggal'        => $raw->tanggal,
@@ -437,11 +438,9 @@ class WorkflowService
                     'pemasok'        => $raw->nama_pemasok ?? $raw->kode_supplier ?? 'Tanpa Nama',
                     'tagihan'        => (float) $raw->tagihan,
                     'status_lunas'   => $raw->status_lunas ?? 'BELUM',
-                    'has_zero_value' => $isZero,
-                    'is_titipan'     => $isZero,
-                    'remark'         => $raw->remark,
-                    'reason'         => $isZero 
-                        ? 'Transaksi Titipan (Non-Tagihan / Rp 0)' 
+                    'has_zero_value' => (float) $raw->tagihan <= 0,
+                    'reason'         => (float) $raw->tagihan <= 0 
+                        ? 'Transaksi Titipan (Tagihan Rp 0)' 
                         : 'Jurnal otomatis belum dibukukan',
                 ];
             }
@@ -453,7 +452,6 @@ class WorkflowService
             $refKey = 'AUTO-PENJUALAN-SALE-' . $sale->id;
             $hasJournal = JurnalUmum::where('sumber_referensi', $refKey)->exists();
             if (!$hasJournal) {
-                $isZero = (float) $sale->tagihan <= 0;
                 $results['sales'][] = [
                     'id'             => $sale->id,
                     'id_penjualan'   => $sale->id_penjualan,
@@ -461,11 +459,9 @@ class WorkflowService
                     'buyer'          => $sale->nama_buyer ?? $sale->kode_customer ?? 'Tanpa Nama',
                     'tagihan'        => (float) $sale->tagihan,
                     'status_lunas'   => $sale->status_pelunasan ?? 'BELUM',
-                    'has_zero_value' => $isZero,
-                    'is_titipan'     => $isZero,
-                    'remark'         => $sale->remark,
-                    'reason'         => $isZero 
-                        ? 'Transaksi Titipan / Sample (Non-Tagihan / Rp 0)' 
+                    'has_zero_value' => (float) $sale->tagihan <= 0,
+                    'reason'         => (float) $sale->tagihan <= 0 
+                        ? 'Transaksi Titipan / Sample (Tagihan Rp 0)' 
                         : 'Jurnal otomatis belum dibukukan',
                 ];
             }
@@ -510,8 +506,10 @@ class WorkflowService
             ];
         }
 
-        // 3. CUGIL Penjualan — Foto Bukti Timbangan Belum Diunggah
-        $salesNoTimbangan = CugilSale::whereNull('foto_timbangan')->orWhere('foto_timbangan', '')->count();
+        // 3. CUGIL Penjualan — Foto Bukti Timbangan Belum Diunggah (Khusus Transaksi Pasca-Migrasi > 25 Sep 2026)
+        $salesNoTimbangan = CugilSale::where(function ($q) {
+            $q->whereNull('foto_timbangan')->orWhere('foto_timbangan', '');
+        })->where('tanggal', '>', '2026-09-25')->count();
         if ($salesNoTimbangan > 0) {
             $gaps[] = [
                 'category'    => 'CUGIL Penjualan',
@@ -741,8 +739,8 @@ class WorkflowService
                     if (!isset($existingIds[$j->id_jurnal])) {
                         self::initializeChecklist($module, JurnalUmum::class, $j->id_jurnal, $j->no_transaksi, 'jurnal_draft', $userName);
                         
-                        // Validasi debit == kredit (termasuk memorial titipan Rp 0)
-                        if (abs((float)$j->total_debit - (float)$j->total_kredit) < 0.01) {
+                        // Validasi debit == kredit
+                        if (abs((float)$j->total_debit - (float)$j->total_kredit) < 0.01 && (float)$j->total_debit > 0) {
                             self::completeStep($module, $j->id_jurnal, 'jurnal_balance_checked', $userName);
                         }
 
@@ -848,11 +846,15 @@ class WorkflowService
                 $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
                 $records = rescue(fn() => CugilSale::all(), collect());
                 foreach ($records as $rec) {
+                    $isPraMigrasi = $rec->tanggal && \Carbon\Carbon::parse($rec->tanggal)->format('Y-m-d') <= '2026-09-25';
+
                     if (!isset($existingIds[$rec->id])) {
                         self::initializeChecklist($module, CugilSale::class, $rec->id, $rec->id_penjualan ?? ('SALE-' . $rec->id), 'sales_order_created', $userName);
 
                         if (!empty($rec->foto_timbangan)) {
                             self::completeStep($module, $rec->id, 'sales_timbangan', $userName, 'Foto timbangan ada');
+                        } elseif ($isPraMigrasi) {
+                            self::completeStep($module, $rec->id, 'sales_timbangan', $userName, 'Dispensasi Pra-Migrasi (<= 25 Sep 2026)');
                         }
 
                         self::completeStep($module, $rec->id, 'sales_surat_jalan', $userName);
@@ -877,6 +879,11 @@ class WorkflowService
                         }
 
                         $count++;
+                    } else {
+                        // Terapkan dispensasi pada data existing yang belum lengkap
+                        if ($isPraMigrasi) {
+                            self::completeStep($module, $rec->id, 'sales_timbangan', $userName, 'Dispensasi Pra-Migrasi (<= 25 Sep 2026)');
+                        }
                     }
                 }
                 break;

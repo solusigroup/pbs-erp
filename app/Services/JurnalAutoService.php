@@ -58,8 +58,7 @@ class JurnalAutoService
         $tanggal = $rawMaterial->tanggal;
         $namaSupplier = $rawMaterial->nama_pemasok ?? $rawMaterial->kode_supplier;
         $nomorPO = $rawMaterial->nomor_po ?? '-';
-        $qty = (float) ($rawMaterial->total_qty ?? 0);
-        $remark = trim($rawMaterial->remark ?? '');
+        $keterangan = trim($rawMaterial->keterangan ?? $rawMaterial->remark ?? '');
 
         $noTransaksi = $this->generateNoTransaksi(self::PREFIX_PEMBELIAN, $tanggal);
 
@@ -67,33 +66,26 @@ class JurnalAutoService
 
         // Penanganan Transaksi Titipan (Tagihan Rp 0 / Non-Tagihan)
         if ($tagihan <= 0) {
-            $keteranganTitipan = "Penerimaan bahan baku titipan - {$namaSupplier} (PO: {$nomorPO})";
-            if (!empty($remark)) {
-                $keteranganTitipan .= " [Ket: {$remark}]";
-            }
+            $ketStr = $keterangan ? " [Ket: {$keterangan}]" : '';
+            $qty = (float)($rawMaterial->total_qty ?? $rawMaterial->total_bruto ?? 0);
+            $qtyStr = $qty > 0 ? " - Netto: " . number_format($qty, 2, ',', '.') . " Kg" : '';
 
-            // Debit: Persediaan Bahan Baku (Titipan)
             $details[] = [
                 'kode_akun' => '1-1610',
-                'keterangan_baris' => $keteranganTitipan . ' (Persediaan Titipan)',
+                'keterangan_baris' => "Penerimaan bahan baku titipan - {$namaSupplier} (PO: {$nomorPO}){$ketStr} (Persediaan Titipan)",
                 'debit' => 0,
                 'kredit' => 0,
             ];
-
-            // Kredit: Hutang Usaha (Titipan)
             $details[] = [
                 'kode_akun' => '2-1100',
-                'keterangan_baris' => $keteranganTitipan . ' (Hutang Titipan)',
+                'keterangan_baris' => "Penerimaan bahan baku titipan - {$namaSupplier} (PO: {$nomorPO}){$ketStr} (Hutang Titipan)",
                 'debit' => 0,
                 'kredit' => 0,
             ];
 
-            $deskripsi = "[AUTO-TITIPAN] Penerimaan bahan baku titipan - {$namaSupplier} (PO: {$nomorPO}) - Netto: " . number_format($qty, 2, ',', '.') . " Kg";
-            if (!empty($remark)) {
-                $deskripsi .= " ({$remark})";
-            }
+            $deskripsi = "[AUTO-TITIPAN] Penerimaan bahan baku titipan - {$namaSupplier} (PO: {$nomorPO}){$qtyStr}" . ($keterangan ? " ({$keterangan})" : "");
 
-            return $this->createDraftJurnal($noTransaksi, $tanggal, 'Umum', $deskripsi, $refKey, 0, 0, $details);
+            return $this->createDraftJurnal($noTransaksi, $tanggal, 'Memorial', $deskripsi, $refKey, 0, 0, $details);
         }
 
         // Debit: Persediaan Bahan Baku
@@ -152,8 +144,7 @@ class JurnalAutoService
         $tanggal = $sale->tanggal;
         $namaCustomer = $sale->nama_buyer ?? $sale->kode_customer;
         $nomorInvoice = $sale->id_penjualan;
-        $qty = (float) ($sale->total_qty ?? 0);
-        $remark = trim($sale->remark ?? '');
+        $keterangan = trim($sale->remark ?? $sale->keterangan ?? '');
 
         $noTransaksi = $this->generateNoTransaksi(self::PREFIX_PENJUALAN, $tanggal);
 
@@ -161,33 +152,26 @@ class JurnalAutoService
 
         // Penanganan Transaksi Titipan / Sample (Tagihan Rp 0 / Non-Tagihan)
         if ($tagihan <= 0) {
-            $keteranganTitipan = "Pengeluaran produk titipan/sample - {$namaCustomer} (INV: {$nomorInvoice})";
-            if (!empty($remark)) {
-                $keteranganTitipan .= " [Ket: {$remark}]";
-            }
+            $ketStr = $keterangan ? " [Ket: {$keterangan}]" : '';
+            $qty = (float)($sale->total_qty ?? 0);
+            $qtyStr = $qty > 0 ? " - Qty: " . number_format($qty, 2, ',', '.') . " Kg" : '';
 
-            // Debit: Piutang Usaha (Titipan)
             $details[] = [
                 'kode_akun' => '1-1300',
-                'keterangan_baris' => $keteranganTitipan . ' (Piutang Titipan)',
+                'keterangan_baris' => "Pengeluaran produk titipan/sample - {$namaCustomer} (INV: {$nomorInvoice}){$ketStr} (Piutang Titipan)",
                 'debit' => 0,
                 'kredit' => 0,
             ];
-
-            // Kredit: Pendapatan Penjualan (Titipan)
             $details[] = [
                 'kode_akun' => '4-1100',
-                'keterangan_baris' => $keteranganTitipan . ' (Penjualan Titipan/Sample)',
+                'keterangan_baris' => "Pengeluaran produk titipan/sample - {$namaCustomer} (INV: {$nomorInvoice}){$ketStr} (Penjualan Titipan/Sample)",
                 'debit' => 0,
                 'kredit' => 0,
             ];
 
-            $deskripsi = "[AUTO-TITIPAN] Pengeluaran produk titipan/sample - {$namaCustomer} (INV: {$nomorInvoice}) - Qty: " . number_format($qty, 2, ',', '.') . " Kg";
-            if (!empty($remark)) {
-                $deskripsi .= " ({$remark})";
-            }
+            $deskripsi = "[AUTO-TITIPAN] Pengeluaran produk titipan/sample - {$namaCustomer} (INV: {$nomorInvoice}){$qtyStr}" . ($keterangan ? " ({$keterangan})" : "");
 
-            return $this->createDraftJurnal($noTransaksi, $tanggal, 'Umum', $deskripsi, $refKey, 0, 0, $details);
+            return $this->createDraftJurnal($noTransaksi, $tanggal, 'Memorial', $deskripsi, $refKey, 0, 0, $details);
         }
 
         // Debit: Piutang Usaha (jika ada sisa piutang)

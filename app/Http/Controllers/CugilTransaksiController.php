@@ -547,6 +547,8 @@ class CugilTransaksiController extends Controller
         $sale->status_timbangan = 'SUDAH';
         $sale->save();
 
+        WorkflowService::completeStep('cugil_sales', $sale->id, 'sales_timbangan', auth()->user()->name ?? 'System', 'Foto slip timbangan diunggah');
+
         return redirect()->route('cugil.sales.index')->with('success', 'Foto slip timbangan (' . $sale->id_penjualan . ') berhasil diupload & otomatis dikompresi.');
     }
 
