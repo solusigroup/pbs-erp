@@ -195,7 +195,8 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Modul Analisis & Business Intelligence ───────────────────────────────
     Route::prefix('analisis')->name('analisis.')->group(function () {
-        Route::get('/', [AnalisisController::class, 'index'])->name('index');
+        Route::get('/',      [AnalisisController::class, 'index'])->name('index');
+        Route::get('/cetak', [AnalisisController::class, 'cetak'])->name('cetak');
     });
 
     // ── Modul Manajemen User & Otoritas (RBAC) ──────────────────────────────

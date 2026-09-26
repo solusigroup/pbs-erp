@@ -24,6 +24,25 @@ class AnalisisController extends Controller
      */
     public function index(Request $request)
     {
+        $data = $this->getAnalisisData($request);
+        return view('analisis.index', $data);
+    }
+
+    /**
+     * Format Cetak Dokumen Resmi & Ringan (A4 Print / Simpan PDF)
+     * Format minimalis, cepat, zero-bloat, tanpa screenshot dark UI
+     */
+    public function cetak(Request $request)
+    {
+        $data = $this->getAnalisisData($request);
+        return view('analisis.cetak', $data);
+    }
+
+    /**
+     * Agregasi & kalkulasi metrik analisis komparatif
+     */
+    private function getAnalisisData(Request $request): array
+    {
         $perusahaan = Perusahaan::first();
 
         // ── 0. DAFTAR TAHUN TERSEDIA & PARAMETER TAHUN KOMPARATIF ───────────────
@@ -362,7 +381,7 @@ class AnalisisController extends Controller
             ->sortByDesc('margin_pct')
             ->values();
 
-        return view('analisis.index', compact(
+        return compact(
             'perusahaan', 'tahun', 'tahunBanding', 'availableYears',
             'totalBahanMasuk', 'totalHasilCugil', 'rendemenPersen', 'susutPersen',
             'totalPenjualan', 'totalPembelian', 'totalLabaKotor', 'grossMarginPersen',
@@ -371,6 +390,6 @@ class AnalisisController extends Controller
             'monthlyLabels', 'monthlyPenjualan1', 'monthlyPenjualan2', 'monthlyPembelian1', 'monthlyPembelian2', 'monthlyMargin1', 'monthlyMargin2',
             'multiYearLabels', 'multiYearSales', 'multiYearRaw', 'multiYearProfit',
             'agingAR', 'kategoriLabels', 'kategoriVolumes', 'topBuyers', 'topSuppliers', 'barangMargin'
-        ));
+        );
     }
 }

@@ -3,6 +3,52 @@
 @section('title', 'Executive Business Intelligence & Analisis Komparatif YoY - PBS-ERP')
 
 @section('content')
+<style>
+    @media print {
+        /* Zero graphic bloat, turn dark mode off on print */
+        *, *::before, *::after {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+            transition: none !important;
+        }
+
+        html, body, main, div, .overflow-x-auto, .overflow-hidden {
+            overflow: visible !important;
+            height: auto !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .no-print, header, footer, nav, aside, #mainSidebar, form, button, canvas, #formFilterTahun {
+            display: none !important;
+        }
+
+        table {
+            table-layout: fixed !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 8pt !important;
+            color: #000000 !important;
+        }
+
+        th, td {
+            border: 1px solid #94a3b8 !important;
+            padding: 4px 6px !important;
+            color: #000000 !important;
+        }
+
+        th {
+            background-color: #f1f5f9 !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 8mm 10mm 10mm 10mm;
+        }
+    }
+</style>
 <div class="space-y-6">
     <!-- Header Page & Multi-Year Selection Toolbar -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
@@ -47,10 +93,10 @@
 
                 <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
 
-                <button onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition">
-                    <i class="fas fa-print text-amber-400"></i>
-                    <span>Cetak / PDF</span>
-                </button>
+                <a href="{{ route('analisis.cetak', ['tahun' => $tahun, 'tahun_banding' => $tahunBanding]) }}" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25" title="Buka Format Cetak Ringan & Rapi (Siap Cetak / PDF)">
+                    <i class="fas fa-print"></i>
+                    <span>Cetak Laporan / PDF</span>
+                </a>
             </div>
         </div>
 
