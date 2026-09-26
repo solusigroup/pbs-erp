@@ -428,6 +428,26 @@
                 </div>
             </div>
 
+            @if($activeSignatures->isEmpty())
+                <div class="p-8 text-center bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center text-xl">
+                        <i class="fas fa-signature"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">Blok Tanda Tangan Belum Dikonfigurasi</h4>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                            Susunan penandatangan untuk dokumen <strong class="text-amber-400">{{ $docTitles[$currentDoc] ?? $currentDoc }}</strong> belum tersedia di database.
+                        </p>
+                    </div>
+                    <form method="POST" action="{{ route('perusahaan.signatures.reset') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition">
+                            <i class="fas fa-rotate-left"></i>
+                            <span>Muat & Inisialisasi Blok Standar PT PBS</span>
+                        </button>
+                    </form>
+                </div>
+            @else
             <form method="POST" action="{{ route('perusahaan.signatures.update') }}" class="space-y-6">
                 @csrf
                 @method('PUT')
@@ -449,7 +469,7 @@
                                     <option value="">⚡ Pilih Cepat dari BOD</option>
                                     @foreach($directors as $d)
                                         <option value="{{ $d->id }}" data-nama="{{ $d->nama }}" data-jabatan="{{ $d->jabatan }}" {{ $sig->director_id == $d->id ? 'selected' : '' }}>
-                                            {{ $d->nama }} ({{ $d->jabatan }})
+                                             {{ $d->nama }} ({{ $d->jabatan }})
                                         </option>
                                     @endforeach
                                 </select>
@@ -518,6 +538,7 @@
                     @endif
                 </div>
             </form>
+            @endif
         </div>
     </div>
     @endif

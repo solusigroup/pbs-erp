@@ -113,7 +113,10 @@ class DatabaseSeeder extends Seeder
                     'is_active' => true,
                 ]
             );
+        }
+
         $this->call(RoleSeeder::class);
+        $this->call(DirectorAndSignatureSeeder::class);
         // Data simulasi Cugil, jika ingin dihapus nanti bisa di-comment
         $this->call(CugilSeeder::class);
     }

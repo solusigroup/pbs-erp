@@ -33,6 +33,18 @@ class PerusahaanController extends Controller
         }
 
         $directors = CompanyDirector::orderBy('urutan')->get();
+
+        // Auto-seed data Direksi & Signatures jika tabel masih kosong di production
+        if (DocumentSignature::count() === 0) {
+            try {
+                $seeder = new \Database\Seeders\DirectorAndSignatureSeeder();
+                $seeder->run();
+                $directors = CompanyDirector::orderBy('urutan')->get();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Auto-seed DirectorAndSignatureSeeder: ' . $e->getMessage());
+            }
+        }
+
         $signatures = DocumentSignature::with('director')->orderBy('urutan')->get()->groupBy('jenis_dokumen');
         $bod = User::where('role', 'bod')->get();
         $staff = User::where('role', '!=', 'bod')->get();
