@@ -527,62 +527,69 @@ class WorkflowService
      */
     public static function getMonthlyClosingStatus(?string $periodYm = null): array
     {
-        $periodYm = $periodYm ?: now()->format('Y-m');
-        $startDate = Carbon::createFromFormat('Y-m', $periodYm)->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::createFromFormat('Y-m', $periodYm)->endOfMonth()->format('Y-m-d');
+        try {
+            $parsed = Carbon::parse(($periodYm ?: date('Y-m')) . '-01');
+        } catch (\Throwable $e) {
+            $parsed = now();
+        }
+        $periodYm = $parsed->format('Y-m');
+        $startDate = $parsed->copy()->startOfMonth()->format('Y-m-d');
+        $endDate = $parsed->copy()->endOfMonth()->format('Y-m-d');
 
         // Checkpoint 1: Transaksi operasional bulan ini tercatat
-        $rawInPeriod = CugilRawMaterial::whereBetween('tanggal', [$startDate, $endDate])->count();
-        $salesInPeriod = CugilSale::whereBetween('tanggal', [$startDate, $endDate])->count();
+        $rawInPeriod = rescue(fn() => CugilRawMaterial::whereBetween('tanggal', [$startDate, $endDate])->count(), 0);
+        $salesInPeriod = rescue(fn() => CugilSale::whereBetween('tanggal', [$startDate, $endDate])->count(), 0);
         $opsRecorded = ($rawInPeriod > 0 || $salesInPeriod > 0);
 
         // Checkpoint 2: Jurnal draft di bulan ini sudah 0 (semua sudah di-approve)
-        $draftInPeriod = JurnalUmum::where('is_posted', false)
+        $draftInPeriod = rescue(fn() => JurnalUmum::where('is_posted', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->count();
+            ->count(), 0);
         $draftCleared = ($draftInPeriod === 0);
 
         // Checkpoint 3: Jurnal Penyesuaian HPP CUGIL telah dieksekusi di akhir bulan
-        $hppAdjusted = JurnalUmum::where('is_posted', true)
+        $hppAdjusted = rescue(fn() => JurnalUmum::where('is_posted', true)
             ->where(function ($q) {
                 $q->where('deskripsi', 'like', '%HPP%')
                   ->orWhere('deskripsi', 'like', '%Penyesuaian Beban Pokok%')
                   ->orWhere('sumber_referensi', 'like', 'AUTO-ADJUST-HPP-%');
             })
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->exists();
+            ->exists(), false);
 
         // Checkpoint 4: Rekonsiliasi Kas & Bank
-        $cashJournals = JurnalUmum::where('is_posted', true)
+        $cashJournals = rescue(fn() => JurnalUmum::where('is_posted', true)
             ->whereIn('tipe_jurnal', ['Kas Masuk', 'Kas Keluar', 'Transfer'])
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->count();
+            ->count(), 0);
         $cashReconciled = ($cashJournals > 0);
 
         // Checkpoint 5: Trial Balance Balance
-        $totalDebit = JurnalUmum::where('is_posted', true)
+        $totalDebit = rescue(fn() => (float) JurnalUmum::where('is_posted', true)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('total_debit');
-        $totalKredit = JurnalUmum::where('is_posted', true)
+            ->sum('total_debit'), 0.0);
+        $totalKredit = rescue(fn() => (float) JurnalUmum::where('is_posted', true)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('total_kredit');
+            ->sum('total_kredit'), 0.0);
         $trialBalanceOk = (abs($totalDebit - $totalKredit) < 0.01);
 
         // Checkpoint 6: Pajak disetor & dilaporkan
-        $unsettledTax = TransaksiPajak::whereBetween('tanggal_faktur_potong', [$startDate, $endDate])
+        $unsettledTax = rescue(fn() => TransaksiPajak::whereBetween('tanggal_faktur_potong', [$startDate, $endDate])
             ->where(function ($q) {
                 $q->where('status_bayar', '!=', 'Sudah Disetor')
                   ->orWhere('status_lapor', '!=', 'Sudah Dilapor');
             })
-            ->count();
+            ->count(), 0);
         $taxFinalized = ($unsettledTax === 0);
 
         // Checkpoint 7: Otorisasi Laporan Keuangan Direksi
-        $closingChecklist = WorkflowChecklist::where('module', 'akuntansi_closing')
-            ->where('reference_code', "CLOSING-{$periodYm}")
-            ->where('step_code', 'close_reports_approved')
-            ->first();
-        $reportsApproved = $closingChecklist ? (bool)$closingChecklist->is_completed : false;
+        $reportsApproved = rescue(function () use ($periodYm) {
+            $closingChecklist = WorkflowChecklist::where('module', 'akuntansi_closing')
+                ->where('reference_code', "CLOSING-{$periodYm}")
+                ->where('step_code', 'close_reports_approved')
+                ->first();
+            return $closingChecklist ? (bool)$closingChecklist->is_completed : false;
+        }, false);
 
         $steps = [
             [
