@@ -51,7 +51,7 @@
                         <i class="fas fa-book-journal-whills text-xs"></i>
                         <span>Buku Jurnal Umum</span>
                     </a>
-                    <a href="{{ route('akuntansi.laba-rugi') }}" class="px-3.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5">
+                    <a href="{{ route('akuntansi.laporan') }}" class="px-3.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition flex items-center gap-1.5">
                         <i class="fas fa-chart-line text-xs"></i>
                         <span>Laporan Laba Rugi PBS</span>
                     </a>
