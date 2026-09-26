@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CugilRawMaterial;
+use App\Models\CugilSale;
+use App\Models\JurnalUmum;
 use App\Models\WorkflowChecklist;
 use App\Models\WorkflowDefinition;
+use App\Services\JurnalAutoService;
 use App\Services\WorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WorkflowController extends Controller
 {
     /**
-     * Halaman utama Kontrol Workflow — overview semua modul.
+     * Halaman utama Kontrol Workflow — overview semua modul bisnis & akuntansi.
      */
     public function index(Request $request)
     {
@@ -28,7 +33,7 @@ class WorkflowController extends Controller
             $moduleSummaries[$module] = $summary;
         }
 
-        // Seluruh dokumen belum selesai (semua modul, max 30)
+        // Dokumen belum selesai (semua modul, max 30)
         $allIncomplete = [];
         foreach (array_keys($moduleLabels) as $module) {
             $docs = WorkflowService::getIncompleteDocuments($module, 10);
@@ -39,11 +44,10 @@ class WorkflowController extends Controller
             }
             $allIncomplete = array_merge($allIncomplete, $docs);
         }
-        // Sort: paling sedikit progresnya di atas
         usort($allIncomplete, fn($a, $b) => $a['progress']['percentage'] <=> $b['progress']['percentage']);
         $allIncomplete = array_slice($allIncomplete, 0, 30);
 
-        // Seluruh skipped workflows (langkah terlewat)
+        // Skipped workflows (langkah terlewat)
         $allSkipped = [];
         foreach (array_keys($moduleLabels) as $module) {
             $skipped = WorkflowService::findSkippedWorkflows($module);
@@ -55,6 +59,11 @@ class WorkflowController extends Controller
             $allSkipped = array_merge($allSkipped, $skipped);
         }
 
+        // Peringatan Kelalaian Administrasi & Akuntansi
+        $alertsSummary = WorkflowService::getPendingAlertsSummary();
+        $adminGaps = WorkflowService::getAdministrativeGaps();
+        $unapprovedJournals = WorkflowService::getUnapprovedJournals([], 5);
+
         // Global stats
         $totalChecklists = WorkflowChecklist::count();
         $completedChecklists = WorkflowChecklist::where('is_completed', true)->count();
@@ -65,6 +74,9 @@ class WorkflowController extends Controller
             'moduleSummaries',
             'allIncomplete',
             'allSkipped',
+            'alertsSummary',
+            'adminGaps',
+            'unapprovedJournals',
             'totalChecklists',
             'completedChecklists',
             'pendingChecklists',
@@ -73,6 +85,216 @@ class WorkflowController extends Controller
             'moduleIcons',
             'moduleColors'
         ));
+    }
+
+    /**
+     * Pusat Kontrol Workflow Akuntansi & Approval Jurnal (Dedicated Hub).
+     */
+    public function akuntansi(Request $request)
+    {
+        $tab = $request->query('tab', 'unapproved');
+        $period = $request->query('period', now()->format('Y-m'));
+
+        // 1. Data Jurnal Belum Approve (Draft)
+        $filters = [
+            'search'        => $request->query('search'),
+            'tipe'          => $request->query('tipe'),
+            'tanggal_dari'  => $request->query('tanggal_dari'),
+            'tanggal_sampai'=> $request->query('tanggal_sampai'),
+        ];
+        $unapprovedJournals = WorkflowService::getUnapprovedJournals($filters, 100);
+
+        // 2. Data Transaksi Tanpa Jurnal
+        $unjournalized = WorkflowService::getUnjournalizedTransactions();
+
+        // 3. Status Tutup Buku Bulanan
+        $closingStatus = WorkflowService::getMonthlyClosingStatus($period);
+
+        // Summary Akuntansi
+        $totalJurnals = JurnalUmum::count();
+        $draftJurnalsCount = JurnalUmum::where('is_posted', false)->count();
+        $postedJurnalsCount = $totalJurnals - $draftJurnalsCount;
+        $approvalPercentage = $totalJurnals > 0 ? round(($postedJurnalsCount / $totalJurnals) * 100) : 100;
+
+        // Ambil daftar periode bulan untuk selector
+        $availablePeriods = JurnalUmum::select(DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as ym"))
+            ->distinct()
+            ->orderBy('ym', 'desc')
+            ->pluck('ym')
+            ->toArray();
+
+        if (empty($availablePeriods)) {
+            $availablePeriods = [now()->format('Y-m')];
+        }
+
+        return view('workflow.akuntansi', compact(
+            'tab',
+            'period',
+            'unapprovedJournals',
+            'unjournalized',
+            'closingStatus',
+            'totalJurnals',
+            'draftJurnalsCount',
+            'postedJurnalsCount',
+            'approvalPercentage',
+            'availablePeriods'
+        ));
+    }
+
+    /**
+     * Batch / Bulk Approve Jurnal Draft.
+     */
+    public function batchApproveJurnal(Request $request, JurnalAutoService $jurnalService)
+    {
+        $jurnalIds = $request->input('jurnal_ids', []);
+
+        if (empty($jurnalIds) || !is_array($jurnalIds)) {
+            return back()->with('error', 'Pilih minimal satu jurnal untuk di-approve.');
+        }
+
+        $user = auth()->user();
+        $approverName = $user->name ?? 'BOD Finance';
+
+        $approvedCount = 0;
+        $failedCount = 0;
+
+        foreach ($jurnalIds as $id) {
+            $jurnal = JurnalUmum::with('details')->find($id);
+            if ($jurnal && !$jurnal->is_posted) {
+                if ($jurnalService->approveJurnal($jurnal)) {
+                    $approvedCount++;
+
+                    // Update workflow checklist jika ada
+                    WorkflowService::completeStep(
+                        'akuntansi_jurnal',
+                        $jurnal->id_jurnal,
+                        'jurnal_approved_posted',
+                        $approverName,
+                        'Disetujui via Batch Approval'
+                    );
+                    WorkflowService::completeStep(
+                        'akuntansi_jurnal',
+                        $jurnal->id_jurnal,
+                        'jurnal_voucher_archived',
+                        $approverName,
+                        'Voucher sah di-posting'
+                    );
+                } else {
+                    $failedCount++;
+                }
+            }
+        }
+
+        $msg = "Berhasil meng-approve {$approvedCount} jurnal ke Buku Besar.";
+        if ($failedCount > 0) {
+            $msg .= " ({$failedCount} jurnal gagal diproses).";
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Generate Otomatis Jurnal untuk Transaksi CUGIL yang Belum Terjurnal.
+     */
+    public function generateMissingJournals(Request $request, JurnalAutoService $jurnalService)
+    {
+        $type = $request->input('type'); // 'raw', 'sales', or 'all'
+        $id = $request->input('id');
+
+        $generatedCount = 0;
+
+        if ($type === 'raw' || $type === 'all') {
+            $query = CugilRawMaterial::query();
+            if ($id) {
+                $query->where('id', $id);
+            }
+            $raws = $query->get();
+
+            foreach ($raws as $raw) {
+                if ((float)$raw->tagihan > 0) {
+                    $jurnal = $jurnalService->createJurnalPembelian($raw);
+                    if ($jurnal) {
+                        $generatedCount++;
+                        // Auto-approve jika diminta
+                        if ($request->boolean('auto_approve')) {
+                            $jurnalService->approveJurnal($jurnal);
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($type === 'sales' || $type === 'all') {
+            $query = CugilSale::query();
+            if ($id) {
+                $query->where('id', $id);
+            }
+            $sales = $query->get();
+
+            foreach ($sales as $sale) {
+                if ((float)$sale->tagihan > 0) {
+                    $jurnal = $jurnalService->createJurnalPenjualan($sale);
+                    if ($jurnal) {
+                        $generatedCount++;
+                        if ($request->boolean('auto_approve')) {
+                            $jurnalService->approveJurnal($jurnal);
+                        }
+                    }
+                }
+            }
+        }
+
+        return back()->with('success', "Berhasil membukukan {$generatedCount} jurnal untuk transaksi operasional.");
+    }
+
+    /**
+     * Pusat Audit Kelalaian Administrasi (All-in-One Gap Audit).
+     */
+    public function audit(Request $request)
+    {
+        $adminGaps = WorkflowService::getAdministrativeGaps();
+        $alertsSummary = WorkflowService::getPendingAlertsSummary();
+        $allSkipped = [];
+
+        foreach (array_keys(WorkflowDefinition::moduleLabels()) as $module) {
+            $skipped = WorkflowService::findSkippedWorkflows($module);
+            foreach ($skipped as &$item) {
+                $item['module'] = $module;
+                $item['module_label'] = WorkflowDefinition::moduleLabels()[$module];
+                $item['module_color'] = WorkflowDefinition::moduleColors()[$module] ?? 'slate';
+            }
+            $allSkipped = array_merge($allSkipped, $skipped);
+        }
+
+        return view('workflow.audit', compact('adminGaps', 'alertsSummary', 'allSkipped'));
+    }
+
+    /**
+     * Verifikasi Langkah Tutup Buku Bulanan.
+     */
+    public function verifyClosingStep(Request $request)
+    {
+        $request->validate([
+            'period'    => 'required|string',
+            'step_code' => 'required|string',
+            'notes'     => 'nullable|string',
+        ]);
+
+        $period = $request->period;
+        $refCode = "CLOSING-{$period}";
+        $refId = (int) hexdec(substr(md5($refCode), 0, 8));
+        $userName = auth()->user()->name ?? 'BOD Direksi';
+
+        // Pastikan checklist diinisialisasi
+        WorkflowService::initializeChecklist('akuntansi_closing', 'App\Models\AkuntansiClosing', $refId, $refCode, null, $userName);
+
+        $success = WorkflowService::completeStep('akuntansi_closing', $refId, $request->step_code, $userName, $request->notes ?? 'Diverifikasi oleh Direksi');
+
+        if ($success) {
+            return back()->with('success', "Langkah [{$request->step_code}] periode {$period} berhasil disahkan oleh {$userName}.");
+        }
+
+        return back()->with('info', "Langkah [{$request->step_code}] periode {$period} sudah disahkan sebelumnya.");
     }
 
     /**
@@ -209,7 +431,7 @@ class WorkflowController extends Controller
     }
 
     /**
-     * Inisialisasi workflow untuk dokumen yang sudah ada (bulk seeder).
+     * Inisialisasi workflow untuk dokumen yang sudah ada (single module seeder).
      */
     public function seedExisting(Request $request)
     {
@@ -220,119 +442,20 @@ class WorkflowController extends Controller
         }
 
         $userName = auth()->user()->name ?? 'System';
-        $count = 0;
-
-        switch ($module) {
-            case 'cugil_po':
-                $records = \App\Models\CugilPurchaseOrder::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        WorkflowService::initializeChecklist($module, \App\Models\CugilPurchaseOrder::class, $rec->id, $rec->nomor_po, 'po_created', $userName);
-                        // Auto-complete "Barang Diterima" if status_terima = YA
-                        if (strtoupper($rec->status_terima ?? '') === 'YA') {
-                            WorkflowService::completeStep($module, $rec->id, 'po_received', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-
-            case 'cugil_raw':
-                $records = \App\Models\CugilRawMaterial::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        $refCode = $rec->nomor_po ?? 'RAW-' . $rec->id;
-                        WorkflowService::initializeChecklist($module, \App\Models\CugilRawMaterial::class, $rec->id, $refCode, 'raw_received', $userName);
-                        if (strtoupper($rec->invoiced ?? '') === 'SUDAH') {
-                            WorkflowService::completeStep($module, $rec->id, 'raw_invoiced', 'System (Auto-Sync)');
-                        }
-                        if (strtoupper($rec->status_lunas ?? '') === 'LUNAS') {
-                            WorkflowService::completeStep($module, $rec->id, 'raw_payment', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-
-            case 'cugil_sales':
-                $records = \App\Models\CugilSale::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        WorkflowService::initializeChecklist($module, \App\Models\CugilSale::class, $rec->id, $rec->id_penjualan, 'sales_order_created', $userName);
-                        if ($rec->foto_timbangan) {
-                            WorkflowService::completeStep($module, $rec->id, 'sales_timbangan', 'System (Auto-Sync)');
-                        }
-                        if (strtoupper($rec->invoiced ?? '') === 'SUDAH') {
-                            WorkflowService::completeStep($module, $rec->id, 'sales_invoiced', 'System (Auto-Sync)');
-                        }
-                        if (strtoupper($rec->status_pelunasan ?? '') === 'LUNAS') {
-                            WorkflowService::completeStep($module, $rec->id, 'sales_payment_received', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-
-            case 'pengajuan_dana':
-                $records = \App\Models\PengajuanDana::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        WorkflowService::initializeChecklist($module, \App\Models\PengajuanDana::class, $rec->id, $rec->nomor_pengajuan, 'dana_submitted', $userName);
-                        if (in_array($rec->status, ['Disetujui BOD', 'Dicairkan'])) {
-                            WorkflowService::completeStep($module, $rec->id, 'dana_reviewed', 'System (Auto-Sync)');
-                            WorkflowService::completeStep($module, $rec->id, 'dana_approved', 'System (Auto-Sync)');
-                        }
-                        if ($rec->status === 'Ditolak') {
-                            WorkflowService::completeStep($module, $rec->id, 'dana_reviewed', 'System (Auto-Sync)');
-                            WorkflowService::completeStep($module, $rec->id, 'dana_approved', 'System (Auto-Sync)', 'Pengajuan ditolak oleh BOD');
-                        }
-                        if ($rec->status === 'Dicairkan') {
-                            WorkflowService::completeStep($module, $rec->id, 'dana_disbursed', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-
-            case 'proyek':
-                $records = \App\Models\Proyek::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        WorkflowService::initializeChecklist($module, \App\Models\Proyek::class, $rec->id, $rec->kode_proyek, 'prj_registered', $userName);
-                        if ($rec->invoices()->exists()) {
-                            WorkflowService::completeStep($module, $rec->id, 'prj_invoice_issued', 'System (Auto-Sync)');
-                        }
-                        if (strtolower($rec->status_proyek ?? '') === 'selesai') {
-                            WorkflowService::completeStep($module, $rec->id, 'prj_completed', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-
-            case 'pajak':
-                $records = \App\Models\TransaksiPajak::all();
-                foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        WorkflowService::initializeChecklist($module, \App\Models\TransaksiPajak::class, $rec->id, $rec->kode_referensi, 'tax_recorded', $userName);
-                        if ($rec->status_bayar === 'Sudah Disetor') {
-                            WorkflowService::completeStep($module, $rec->id, 'tax_paid', 'System (Auto-Sync)');
-                        }
-                        if ($rec->status_lapor === 'Sudah Dilapor') {
-                            WorkflowService::completeStep($module, $rec->id, 'tax_reported', 'System (Auto-Sync)');
-                        }
-                        $count++;
-                    }
-                }
-                break;
-        }
+        $count = WorkflowService::syncModule($module, $userName);
 
         return back()->with('success', "Berhasil menyinkronkan workflow untuk {$count} dokumen di modul " . (WorkflowDefinition::moduleLabels()[$module] ?? $module) . ".");
+    }
+
+    /**
+     * Inisialisasi dan sinkronkan SELURUH workflow dokumen di semua modul sekaligus.
+     */
+    public function seedAllExisting(Request $request)
+    {
+        $userName = auth()->user()->name ?? 'System (Auto-Sync)';
+        $results = WorkflowService::syncAll($userName);
+        $totalSynced = array_sum($results);
+
+        return back()->with('success', "Sinkronisasi tuntas! Total {$totalSynced} dokumen di seluruh lini bisnis & akuntansi berhasil disinkronkan.");
     }
 }

@@ -200,6 +200,20 @@
                         <i class="fas fa-receipt w-4 text-center"></i>
                         <span class="sidebar-text">Jurnal Memorial</span>
                     </a>
+                    <a href="{{ route('workflow.akuntansi') }}" class="sidebar-link-item flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition {{ request()->routeIs('workflow.akuntansi') ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-300 hover:bg-slate-800 hover:text-white' }}" title="Kontrol Workflow & Approval Jurnal">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fas fa-stamp w-4 text-center text-amber-400"></i>
+                            <span class="sidebar-text font-bold">Approval &amp; Workflow</span>
+                        </div>
+                        @php
+                            $sidebarDrafts = \App\Models\JurnalUmum::where('is_posted', false)->count();
+                        @endphp
+                        @if($sidebarDrafts > 0)
+                        <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-slate-900 animate-pulse">
+                            {{ $sidebarDrafts }}
+                        </span>
+                        @endif
+                    </a>
                     <a href="{{ route('akuntansi.laporan') }}" class="sidebar-link-item flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition {{ request()->routeIs('akuntansi.laporan') ? 'bg-[#ff8c00] text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}" title="Laba Rugi & Neraca">
                         <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
                         <span class="sidebar-text">Laba Rugi &amp; Neraca</span>
@@ -256,10 +270,17 @@
                 <span class="sidebar-text font-bold">Executive BI &amp; Analisis</span>
             </a>
 
-            <!-- Kontrol Workflow — Pencegahan Kelalaian Administrasi -->
-            <a href="{{ route('workflow.index') }}" class="sidebar-link-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {{ request()->routeIs('workflow.*') ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/25 font-bold' : 'text-teal-400/90 hover:bg-slate-800/60 hover:text-teal-300' }}" title="Kontrol Workflow Bisnis">
-                <i class="fas fa-route w-5 text-center text-base text-teal-400"></i>
-                <span class="sidebar-text font-bold">Kontrol Workflow</span>
+            <!-- Kontrol Workflow — Pencegahan Kelalaian Administrasi & Akuntansi -->
+            <a href="{{ route('workflow.index') }}" class="sidebar-link-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition {{ request()->routeIs('workflow.*') ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/25 font-bold' : 'text-teal-400/90 hover:bg-slate-800/60 hover:text-teal-300' }}" title="Kontrol Workflow Bisnis & Akuntansi">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-route w-5 text-center text-base text-teal-400"></i>
+                    <span class="sidebar-text font-bold">Kontrol Workflow</span>
+                </div>
+                @if(($sidebarDrafts ?? 0) > 0)
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-900 animate-pulse">
+                    {{ $sidebarDrafts }} Alert
+                </span>
+                @endif
             </a>
 
             <!-- SECTION 3: Direksi & Pengawasan -->

@@ -202,13 +202,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/cetak', [AnalisisController::class, 'cetak'])->name('cetak');
     });
 
-    // ── Modul Kontrol Workflow (Pencegahan Kelalaian Administrasi) ────────
+    // ── Modul Kontrol Workflow (Pencegahan Kelalaian Administrasi & Akuntansi) ──
     Route::prefix('workflow')->name('workflow.')->group(function () {
-        Route::get('/',                     [WorkflowController::class, 'index'])->name('index');
-        Route::get('/module/{module}',      [WorkflowController::class, 'module'])->name('module');
-        Route::post('/complete-step',       [WorkflowController::class, 'completeStep'])->name('completeStep');
-        Route::post('/uncomplete-step',     [WorkflowController::class, 'uncompleteStep'])->name('uncompleteStep');
-        Route::post('/seed-existing',       [WorkflowController::class, 'seedExisting'])->name('seedExisting');
+        Route::get('/',                                [WorkflowController::class, 'index'])->name('index');
+        Route::get('/akuntansi',                       [WorkflowController::class, 'akuntansi'])->name('akuntansi');
+        Route::post('/akuntansi/batch-approve',        [WorkflowController::class, 'batchApproveJurnal'])->name('batchApproveJurnal');
+        Route::post('/akuntansi/generate-missing',     [WorkflowController::class, 'generateMissingJournals'])->name('generateMissingJournals');
+        Route::get('/audit',                           [WorkflowController::class, 'audit'])->name('audit');
+        Route::post('/closing/verify-step',            [WorkflowController::class, 'verifyClosingStep'])->name('verifyClosingStep');
+        Route::get('/module/{module}',                 [WorkflowController::class, 'module'])->name('module');
+        Route::post('/complete-step',                  [WorkflowController::class, 'completeStep'])->name('completeStep');
+        Route::post('/uncomplete-step',                [WorkflowController::class, 'uncompleteStep'])->name('uncompleteStep');
+        Route::post('/seed-existing',                  [WorkflowController::class, 'seedExisting'])->name('seedExisting');
+        Route::post('/seed-all',                       [WorkflowController::class, 'seedAllExisting'])->name('seedAllExisting');
     });
 
     // ── Modul Manajemen User & Otoritas (RBAC) ──────────────────────────────

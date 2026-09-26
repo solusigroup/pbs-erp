@@ -31,12 +31,14 @@ class WorkflowDefinition extends Model
     public static function moduleLabels(): array
     {
         return [
-            'cugil_po'       => 'CUGIL — Purchase Order',
-            'cugil_raw'      => 'CUGIL — Terima Bahan Baku',
-            'cugil_sales'    => 'CUGIL — Penjualan',
-            'pengajuan_dana' => 'Pengajuan Dana / Anggaran',
-            'proyek'         => 'Proyek & Kontrak',
-            'pajak'          => 'Perpajakan',
+            'akuntansi_jurnal'  => 'Akuntansi — Kontrol & Approval Jurnal',
+            'akuntansi_closing' => 'Akuntansi — Siklus Tutup Buku',
+            'cugil_po'          => 'CUGIL — Purchase Order',
+            'cugil_raw'         => 'CUGIL — Terima Bahan Baku',
+            'cugil_sales'       => 'CUGIL — Penjualan',
+            'pengajuan_dana'    => 'Pengajuan Dana / Anggaran',
+            'proyek'            => 'Proyek & Kontrak',
+            'pajak'             => 'Perpajakan',
         ];
     }
 
@@ -46,12 +48,14 @@ class WorkflowDefinition extends Model
     public static function moduleIcons(): array
     {
         return [
-            'cugil_po'       => 'fa-file-invoice',
-            'cugil_raw'      => 'fa-truck-ramp-box',
-            'cugil_sales'    => 'fa-hand-holding-dollar',
-            'pengajuan_dana' => 'fa-money-check-dollar',
-            'proyek'         => 'fa-diagram-project',
-            'pajak'          => 'fa-shield-halved',
+            'akuntansi_jurnal'  => 'fa-stamp',
+            'akuntansi_closing' => 'fa-book-bookmark',
+            'cugil_po'          => 'fa-file-invoice',
+            'cugil_raw'         => 'fa-truck-ramp-box',
+            'cugil_sales'       => 'fa-hand-holding-dollar',
+            'pengajuan_dana'    => 'fa-money-check-dollar',
+            'proyek'            => 'fa-diagram-project',
+            'pajak'             => 'fa-shield-halved',
         ];
     }
 
@@ -61,12 +65,14 @@ class WorkflowDefinition extends Model
     public static function moduleColors(): array
     {
         return [
-            'cugil_po'       => 'blue',
-            'cugil_raw'      => 'amber',
-            'cugil_sales'    => 'emerald',
-            'pengajuan_dana' => 'purple',
-            'proyek'         => 'sky',
-            'pajak'          => 'rose',
+            'akuntansi_jurnal'  => 'indigo',
+            'akuntansi_closing' => 'teal',
+            'cugil_po'          => 'blue',
+            'cugil_raw'         => 'amber',
+            'cugil_sales'       => 'emerald',
+            'pengajuan_dana'    => 'purple',
+            'proyek'            => 'sky',
+            'pajak'             => 'rose',
         ];
     }
 

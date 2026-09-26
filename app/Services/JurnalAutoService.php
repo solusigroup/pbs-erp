@@ -7,6 +7,7 @@ use App\Models\CugilRawMaterial;
 use App\Models\CugilSale;
 use App\Models\JurnalDetail;
 use App\Models\JurnalUmum;
+use App\Services\WorkflowService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -357,6 +358,11 @@ class JurnalAutoService
             $jurnal->is_posted = true;
             $jurnal->save();
 
+            // Sinkronkan ke modul workflow kontrol akuntansi
+            $userName = auth()->user()->name ?? 'BOD Finance';
+            WorkflowService::completeStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_approved_posted', $userName, 'Disetujui & diposting ke GL');
+            WorkflowService::completeStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_voucher_archived', $userName, 'Voucher sah');
+
             return true;
         });
     }
@@ -415,6 +421,10 @@ class JurnalAutoService
 
             $jurnal->is_posted = false;
             $jurnal->save();
+
+            // Rollback status workflow kontrol akuntansi
+            WorkflowService::uncompleteStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_approved_posted');
+            WorkflowService::uncompleteStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_voucher_archived');
 
             return true;
         });
@@ -598,6 +608,24 @@ class JurnalAutoService
                     'debit' => $item['debit'],
                     'kredit' => $item['kredit'],
                 ]);
+            }
+
+            // Inisialisasi Workflow Kontrol Akuntansi
+            WorkflowService::initializeChecklist(
+                'akuntansi_jurnal',
+                JurnalUmum::class,
+                $jurnal->id_jurnal,
+                $jurnal->no_transaksi,
+                'jurnal_draft',
+                'SYSTEM-AUTO'
+            );
+
+            if (abs($totalDebit - $totalKredit) < 0.01) {
+                WorkflowService::completeStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_balance_checked', 'System (Auto-Check)');
+            }
+
+            if (!empty($sumberReferensi)) {
+                WorkflowService::completeStep('akuntansi_jurnal', $jurnal->id_jurnal, 'jurnal_supporting_doc', 'System', 'Ref: ' . $sumberReferensi);
             }
 
             return $jurnal->load('details.akun');

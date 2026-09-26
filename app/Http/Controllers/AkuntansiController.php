@@ -956,6 +956,28 @@ class AkuntansiController extends Controller
             }
         });
 
+        // Workflow Checklist Sync
+        $creator = auth()->user()->name ?? 'Kurniawan, S.E. (BOD)';
+        $newJurnal = JurnalUmum::where('no_transaksi', $request->no_transaksi)->first();
+        if ($newJurnal) {
+            \App\Services\WorkflowService::initializeChecklist(
+                'akuntansi_jurnal',
+                JurnalUmum::class,
+                $newJurnal->id_jurnal,
+                $newJurnal->no_transaksi,
+                'jurnal_draft',
+                $creator
+            );
+            \App\Services\WorkflowService::completeStep('akuntansi_jurnal', $newJurnal->id_jurnal, 'jurnal_balance_checked', $creator);
+            if (!empty($newJurnal->sumber_referensi)) {
+                \App\Services\WorkflowService::completeStep('akuntansi_jurnal', $newJurnal->id_jurnal, 'jurnal_supporting_doc', $creator, 'Ref: ' . $newJurnal->sumber_referensi);
+            }
+            if ($newJurnal->is_posted) {
+                \App\Services\WorkflowService::completeStep('akuntansi_jurnal', $newJurnal->id_jurnal, 'jurnal_approved_posted', $creator, 'Diposting ke GL');
+                \App\Services\WorkflowService::completeStep('akuntansi_jurnal', $newJurnal->id_jurnal, 'jurnal_voucher_archived', $creator, 'Voucher sah');
+            }
+        }
+
         return redirect()->route('akuntansi.jurnal')->with('success', 'Jurnal memorial ' . $request->no_transaksi . ' berhasil dibukukan.');
     }
 
