@@ -68,11 +68,13 @@ class WorkflowService
         }
 
         // Gunakan upsert agar aman dari duplikat
-        DB::table('workflow_checklists')->upsert(
-            $records,
-            ['module', 'reference_id', 'step_code'],
-            ['step_name', 'step_order', 'is_required', 'is_completed', 'completed_at', 'completed_by', 'notes', 'updated_at']
-        );
+        rescue(function () use ($records) {
+            DB::table('workflow_checklists')->upsert(
+                $records,
+                ['module', 'reference_id', 'step_code'],
+                ['step_name', 'step_order', 'is_required', 'is_completed', 'completed_at', 'completed_by', 'notes', 'updated_at']
+            );
+        });
     }
 
     /**
@@ -668,10 +670,10 @@ class WorkflowService
 
         switch ($module) {
             case 'akuntansi_jurnal':
-                $jurnals = JurnalUmum::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $jurnals = rescue(fn() => JurnalUmum::all(), collect());
                 foreach ($jurnals as $j) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $j->id_jurnal)->exists();
-                    if (!$existing) {
+                    if (!isset($existingIds[$j->id_jurnal])) {
                         self::initializeChecklist($module, JurnalUmum::class, $j->id_jurnal, $j->no_transaksi, 'jurnal_draft', $userName);
                         
                         // Validasi debit == kredit
@@ -696,18 +698,23 @@ class WorkflowService
                 break;
 
             case 'akuntansi_closing':
-                // Ambil daftar bulan yang memiliki transaksi
-                $periods = JurnalUmum::select(DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as ym"))
-                    ->distinct()
-                    ->orderBy('ym', 'desc')
-                    ->pluck('ym');
+                $existingCodes = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_code')->flip()->toArray(), []);
+                $periods = rescue(function () {
+                    return JurnalUmum::select(DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as ym"))
+                        ->whereNotNull('tanggal')
+                        ->distinct()
+                        ->orderBy('ym', 'desc')
+                        ->pluck('ym')
+                        ->filter(fn($val) => !empty($val) && is_string($val))
+                        ->values()
+                        ->toArray();
+                }, []);
 
                 foreach ($periods as $ym) {
                     $refCode = "CLOSING-{$ym}";
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_code', $refCode)->exists();
-                    if (!$existing) {
-                        // Inisialisasi closing record dengan ID hash dari string period
-                        $refId = (int) hexdec(substr(md5($refCode), 0, 8));
+                    if (!isset($existingCodes[$refCode])) {
+                        // Inisialisasi closing record dengan ID unsigned integer positif unik
+                        $refId = abs(crc32($refCode));
                         self::initializeChecklist($module, 'App\Models\AkuntansiClosing', $refId, $refCode, 'close_ops_recorded', $userName);
 
                         $status = self::getMonthlyClosingStatus($ym);
@@ -722,15 +729,16 @@ class WorkflowService
                 break;
 
             case 'cugil_po':
-                $records = CugilPurchaseOrder::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => CugilPurchaseOrder::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        self::initializeChecklist($module, CugilPurchaseOrder::class, $rec->id, $rec->nomor_po, 'po_created', $userName);
+                    if (!isset($existingIds[$rec->id])) {
+                        self::initializeChecklist($module, CugilPurchaseOrder::class, $rec->id, $rec->nomor_po ?? ('PO-' . $rec->id), 'po_created', $userName);
                         self::completeStep($module, $rec->id, 'po_approved', $userName);
                         self::completeStep($module, $rec->id, 'po_sent_supplier', $userName);
 
-                        if (strtoupper($rec->status_terima ?? '') === 'YA' || $rec->rawMaterials()->exists()) {
+                        $hasRaw = rescue(fn() => CugilRawMaterial::where('nomor_po', $rec->nomor_po)->exists(), false);
+                        if (strtoupper($rec->status_terima ?? '') === 'YA' || $hasRaw) {
                             self::completeStep($module, $rec->id, 'po_received', $userName, 'Barang diterima via RAW');
                         }
                         $count++;
@@ -739,15 +747,16 @@ class WorkflowService
                 break;
 
             case 'cugil_raw':
-                $records = CugilRawMaterial::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => CugilRawMaterial::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        $refCode = $rec->nomor_po ?? 'RAW-' . $rec->id;
+                    if (!isset($existingIds[$rec->id])) {
+                        $refCode = $rec->nomor_po ?? ('RAW-' . $rec->id);
                         self::initializeChecklist($module, CugilRawMaterial::class, $rec->id, $refCode, 'raw_received', $userName);
 
-                        if ((float)$rec->berat_netto > 0) {
-                            self::completeStep($module, $rec->id, 'raw_weighed', $userName, 'Netto: ' . number_format($rec->berat_netto, 2) . ' Kg');
+                        $qty = (float)($rec->total_qty ?? $rec->total_bruto ?? 0);
+                        if ($qty > 0) {
+                            self::completeStep($module, $rec->id, 'raw_weighed', $userName, 'Netto: ' . number_format($qty, 2) . ' Kg');
                         }
 
                         if (strtoupper($rec->invoiced ?? '') === 'SUDAH' || (float)$rec->tagihan > 0) {
@@ -760,7 +769,8 @@ class WorkflowService
 
                         // Jurnal posted check
                         $refKey = 'AUTO-PEMBELIAN-RAW-' . $rec->id;
-                        if (JurnalUmum::where('sumber_referensi', $refKey)->where('is_posted', true)->exists()) {
+                        $hasJurnal = rescue(fn() => JurnalUmum::where('sumber_referensi', $refKey)->where('is_posted', true)->exists(), false);
+                        if ($hasJurnal) {
                             self::completeStep($module, $rec->id, 'raw_journal_posted', $userName);
                         }
 
@@ -770,11 +780,11 @@ class WorkflowService
                 break;
 
             case 'cugil_sales':
-                $records = CugilSale::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => CugilSale::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
-                        self::initializeChecklist($module, CugilSale::class, $rec->id, $rec->id_penjualan, 'sales_order_created', $userName);
+                    if (!isset($existingIds[$rec->id])) {
+                        self::initializeChecklist($module, CugilSale::class, $rec->id, $rec->id_penjualan ?? ('SALE-' . $rec->id), 'sales_order_created', $userName);
 
                         if (!empty($rec->foto_timbangan)) {
                             self::completeStep($module, $rec->id, 'sales_timbangan', $userName, 'Foto timbangan ada');
@@ -796,7 +806,8 @@ class WorkflowService
                         }
 
                         $refKey = 'AUTO-PENJUALAN-SALE-' . $rec->id;
-                        if (JurnalUmum::where('sumber_referensi', $refKey)->where('is_posted', true)->exists()) {
+                        $hasJurnal = rescue(fn() => JurnalUmum::where('sumber_referensi', $refKey)->where('is_posted', true)->exists(), false);
+                        if ($hasJurnal) {
                             self::completeStep($module, $rec->id, 'sales_journal_posted', $userName);
                         }
 
@@ -806,10 +817,10 @@ class WorkflowService
                 break;
 
             case 'pengajuan_dana':
-                $records = PengajuanDana::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => PengajuanDana::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
+                    if (!isset($existingIds[$rec->id])) {
                         self::initializeChecklist($module, PengajuanDana::class, $rec->id, $rec->nomor_pengajuan, 'dana_submitted', $userName);
                         if (in_array($rec->status, ['Disetujui BOD', 'Dicairkan'])) {
                             self::completeStep($module, $rec->id, 'dana_reviewed', $userName);
@@ -828,10 +839,10 @@ class WorkflowService
                 break;
 
             case 'proyek':
-                $records = Proyek::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => Proyek::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
+                    if (!isset($existingIds[$rec->id])) {
                         self::initializeChecklist($module, Proyek::class, $rec->id, $rec->kode_proyek, 'prj_registered', $userName);
                         if ($rec->invoices()->exists()) {
                             self::completeStep($module, $rec->id, 'prj_invoice_issued', $userName);
@@ -845,10 +856,10 @@ class WorkflowService
                 break;
 
             case 'pajak':
-                $records = TransaksiPajak::all();
+                $existingIds = rescue(fn() => WorkflowChecklist::where('module', $module)->pluck('reference_id')->flip()->toArray(), []);
+                $records = rescue(fn() => TransaksiPajak::all(), collect());
                 foreach ($records as $rec) {
-                    $existing = WorkflowChecklist::where('module', $module)->where('reference_id', $rec->id)->exists();
-                    if (!$existing) {
+                    if (!isset($existingIds[$rec->id])) {
                         self::initializeChecklist($module, TransaksiPajak::class, $rec->id, $rec->kode_referensi, 'tax_recorded', $userName);
                         self::completeStep($module, $rec->id, 'tax_verified', $userName);
 

@@ -216,8 +216,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/module/{module}',                 [WorkflowController::class, 'module'])->name('module');
         Route::post('/complete-step',                  [WorkflowController::class, 'completeStep'])->name('completeStep');
         Route::post('/uncomplete-step',                [WorkflowController::class, 'uncompleteStep'])->name('uncompleteStep');
-        Route::post('/seed-existing',                  [WorkflowController::class, 'seedExisting'])->name('seedExisting');
-        Route::post('/seed-all',                       [WorkflowController::class, 'seedAllExisting'])->name('seedAllExisting');
+        Route::match(['GET', 'POST'], '/seed-existing', [WorkflowController::class, 'seedExisting'])->name('seedExisting');
+        Route::match(['GET', 'POST'], '/seed-all',      [WorkflowController::class, 'seedAllExisting'])->name('seedAllExisting');
     });
 
     // ── Modul Manajemen User & Otoritas (RBAC) ──────────────────────────────

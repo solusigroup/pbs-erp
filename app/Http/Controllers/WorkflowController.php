@@ -456,13 +456,13 @@ class WorkflowController extends Controller
         $module = $request->input('module');
 
         if (!$module) {
-            return back()->with('error', 'Modul harus dipilih.');
+            return redirect()->route('workflow.index')->with('error', 'Modul harus dipilih.');
         }
 
         $userName = auth()->user()->name ?? 'System';
         $count = WorkflowService::syncModule($module, $userName);
 
-        return back()->with('success', "Berhasil menyinkronkan workflow untuk {$count} dokumen di modul " . (WorkflowDefinition::moduleLabels()[$module] ?? $module) . ".");
+        return redirect()->route('workflow.module', $module)->with('success', "Berhasil menyinkronkan workflow untuk {$count} dokumen di modul " . (WorkflowDefinition::moduleLabels()[$module] ?? $module) . ".");
     }
 
     /**
@@ -470,10 +470,13 @@ class WorkflowController extends Controller
      */
     public function seedAllExisting(Request $request)
     {
+        @ini_set('max_execution_time', '300');
+        @set_time_limit(300);
+
         $userName = auth()->user()->name ?? 'System (Auto-Sync)';
         $results = WorkflowService::syncAll($userName);
         $totalSynced = array_sum($results);
 
-        return back()->with('success', "Sinkronisasi tuntas! Total {$totalSynced} dokumen di seluruh lini bisnis & akuntansi berhasil disinkronkan.");
+        return redirect()->route('workflow.index')->with('success', "Sinkronisasi tuntas! Total {$totalSynced} dokumen di seluruh lini bisnis & akuntansi berhasil disinkronkan.");
     }
 }
