@@ -1016,7 +1016,26 @@
         </section>
 
         <!-- Footer -->
-        <footer class="py-12 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-3">
+        <footer class="py-12 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-4">
+            <!-- Eye-catching Powered by SimpleAkunting.id Badge -->
+            <div class="flex items-center justify-center">
+                <a 
+                    href="https://simpleakunting.id/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    class="group relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/40 hover:border-amber-400 shadow-lg shadow-orange-500/10 hover:shadow-orange-500/25 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors">
+                        Powered by <strong class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 group-hover:from-amber-300 group-hover:to-orange-200 text-sm tracking-wide">SimpleAkunting.id</strong>
+                    </span>
+                    <i class="fas fa-arrow-up-right-from-square text-[10px] text-amber-400/80 group-hover:text-amber-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"></i>
+                </a>
+            </div>
+
             <p>
                 &copy; {{ date('Y') }} <strong class="text-slate-300">PT Pinastika Bhakti Semesta (PBS)</strong>. Hak Cipta Dilindungi Undang-Undang.
             </p>
