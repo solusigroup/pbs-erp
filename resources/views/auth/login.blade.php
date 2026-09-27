@@ -82,7 +82,7 @@
                             type="email" 
                             name="email" 
                             id="email" 
-                            value="{{ old('email', 'kurniawan@pinastika.co.id') }}" 
+                            value="{{ old('email') }}" 
                             required 
                             autofocus
                             placeholder="nama@pinastika.co.id"
@@ -103,7 +103,6 @@
                             type="password" 
                             name="password" 
                             id="password" 
-                            value="password"
                             required 
                             placeholder="••••••••"
                             class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-[#ff8c00] focus:ring-1 focus:ring-[#ff8c00] transition"
@@ -127,28 +126,6 @@
                 </button>
             </form>
 
-            <!-- Quick Demo Credential Switcher for Development -->
-            <div class="mt-6 pt-6 border-t border-slate-800 text-xs text-slate-400">
-                <span class="font-semibold text-slate-300 block mb-2">Akses Cepat Pengujian Intern:</span>
-                <div class="grid grid-cols-2 gap-2">
-                    <button 
-                        type="button" 
-                        onclick="document.getElementById('email').value='kurniawan@pinastika.co.id'; document.getElementById('password').value='password';"
-                        class="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left border border-slate-700/60 transition"
-                    >
-                        <strong class="text-amber-400 block text-[11px]">BOD Finance & Tax</strong>
-                        <span class="text-[10px] text-slate-400">Kurniawan, S.E.</span>
-                    </button>
-                    <button 
-                        type="button" 
-                        onclick="document.getElementById('email').value='finance@pinastika.co.id'; document.getElementById('password').value='password';"
-                        class="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left border border-slate-700/60 transition"
-                    >
-                        <strong class="text-sky-400 block text-[11px]">Finance & Accounting</strong>
-                        <span class="text-[10px] text-slate-400">Finance Team</span>
-                    </button>
-                </div>
-            </div>
         </div>
 
         <div class="text-center mt-6">
