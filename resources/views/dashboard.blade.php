@@ -4,6 +4,165 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- 1. Blok Hero: Operasional Cuci Giling (CUGIL) PT PBS (Paling Atas) -->
+    <div class="relative overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-r from-slate-900 via-[#0e1c31] to-slate-900 p-6 sm:p-7 backdrop-blur-xl shadow-2xl">
+        <div class="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-blue-500/15 blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg border border-blue-500/30 shrink-0">
+                        <i class="fas fa-recycle"></i>
+                    </div>
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 mb-1">
+                            <i class="fas fa-industry text-[9px]"></i>
+                            <span>Core Operations &bull; Circular Economy</span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-bold text-white">Operasional Cuci Giling (CUGIL) PT PBS</h3>
+                        <p class="text-xs text-slate-400">Pembelian Bahan Kresek &bull; Proses Cuci Giling &bull; Penjualan Produk Cacahan</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('cugil.po.index') }}" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-md shadow-blue-600/20 transition">
+                        <i class="fas fa-file-invoice mr-1.5"></i>PO Bahan
+                    </a>
+                    <a href="{{ route('cugil.raw.index') }}" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-md shadow-amber-600/20 transition">
+                        <i class="fas fa-boxes-stacked mr-1.5"></i>Terima Bahan
+                    </a>
+                    <a href="{{ route('cugil.sales.index') }}" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition">
+                        <i class="fas fa-hand-holding-dollar mr-1.5"></i>Penjualan
+                    </a>
+                </div>
+            </div>
+
+            {{-- CUGIL Metrics --}}
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[11px] text-slate-400 block">Total Penjualan CUGIL</span>
+                    <strong class="text-base sm:text-lg font-bold text-emerald-400 block mt-1">Rp {{ number_format($cugilTotalSales, 0, ',', '.') }}</strong>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[11px] text-slate-400 block">Bahan Baku Masuk</span>
+                    <strong class="text-base sm:text-lg font-bold text-amber-400 block mt-1">Rp {{ number_format($cugilTotalRawTagihan, 0, ',', '.') }}</strong>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[11px] text-slate-400 block">Total Mitra Supplier</span>
+                    <strong class="text-base sm:text-lg font-bold text-cyan-400 block mt-1">{{ $cugilTotalSupplier }} Mitra</strong>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[11px] text-slate-400 block">Total Kastamer Pembeli</span>
+                    <strong class="text-base sm:text-lg font-bold text-purple-400 block mt-1">{{ $cugilTotalCustomer }} Pembeli</strong>
+                </div>
+            </div>
+
+            {{-- Two tables: Recent Raw Materials & Recent Sales --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {{-- Terima Bahan Terbaru --}}
+                <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fas fa-boxes-stacked mr-1.5"></i>Terima Bahan Terbaru</span>
+                        <a href="{{ route('cugil.raw.index') }}" class="text-[11px] text-slate-400 hover:text-white">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2">
+                        @forelse($cugilRecentRaw as $r)
+                            @php
+                                $namaBarang = $r->items && $r->items->count() > 0 
+                                    ? $r->items->pluck('nama_barang')->filter()->implode(', ') 
+                                    : null;
+                            @endphp
+                            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
+                                <div>
+                                    <span class="font-semibold text-white block">{{ $namaBarang ?: ($r->nama_pemasok ?? $r->kode_supplier) }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ $r->nama_pemasok }} &bull; {{ $r->tanggal ? $r->tanggal->format('d/m/Y') : '-' }}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-bold text-amber-400 block">{{ number_format($r->total_qty, 1, ',', '.') }} Kg</span>
+                                    <span class="text-[10px] text-slate-300">Rp {{ number_format($r->tagihan, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-slate-500 italic py-2">Belum ada data terima bahan.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Penjualan Terbaru --}}
+                <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fas fa-hand-holding-dollar mr-1.5"></i>Penjualan CUGIL Terbaru</span>
+                        <a href="{{ route('cugil.sales.index') }}" class="text-[11px] text-slate-400 hover:text-white">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2">
+                        @forelse($cugilRecentSales as $s)
+                            @php
+                                $namaBarang = $s->items && $s->items->count() > 0 
+                                    ? $s->items->pluck('nama_barang')->filter()->implode(', ') 
+                                    : null;
+                            @endphp
+                            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
+                                <div>
+                                    <span class="font-semibold text-white block">{{ $namaBarang ?: ($s->nama_buyer ?? $s->kode_customer) }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ $s->nama_buyer }} &bull; {{ $s->tanggal ? $s->tanggal->format('d/m/Y') : '-' }}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-bold text-emerald-400 block">{{ number_format($s->total_qty, 1, ',', '.') }} Kg</span>
+                                    <span class="text-[10px] text-white font-medium">Rp {{ number_format($s->tagihan, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-slate-500 italic py-2">Belum ada data penjualan.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Jurnal Transaksi Terkini -->
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white">Jurnal Transaksi Terkini</h3>
+                    <p class="text-[11px] text-slate-400">Pencatatan pembukuan akuntansi double-entry</p>
+                </div>
+            </div>
+            <a href="{{ route('akuntansi.jurnal') }}" class="text-xs text-amber-400 hover:underline">Buku Jurnal &rarr;</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-2.5 px-3">No Transaksi</th>
+                        <th class="py-2.5 px-3">Tanggal</th>
+                        <th class="py-2.5 px-3">Deskripsi</th>
+                        <th class="py-2.5 px-3 text-right">Debit / Kredit</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    @forelse($jurnalTerbaru as $j)
+                        <tr>
+                            <td class="py-3 px-3 font-bold text-amber-400 whitespace-nowrap">{{ $j->no_transaksi }}</td>
+                            <td class="py-3 px-3 whitespace-nowrap">{{ $j->tanggal ? $j->tanggal->format('d/m/Y') : '-' }}</td>
+                            <td class="py-3 px-3">{{ $j->deskripsi }}</td>
+                            <td class="py-3 px-3 text-right font-bold text-white whitespace-nowrap">Rp {{ number_format($j->total_debit, 0, ',', '.') }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="py-4 text-center text-slate-500 italic">Belum ada jurnal transaksi.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. Sisanya di Bawah -->
     <!-- Executive Welcome Banner -->
     <div class="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-r from-slate-900 via-[#101d33] to-slate-900 p-8 shadow-2xl backdrop-blur-xl">
         <div class="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-amber-500/15 blur-3xl pointer-events-none"></div>
@@ -228,190 +387,43 @@
         </div>
     </div>
 
-    <!-- Jurnal Transaksi & Proyek Berjalan -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Jurnal Terkini -->
-        <div class="lg:col-span-7 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
-                        <i class="fas fa-receipt"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Jurnal Transaksi Terkini</h3>
-                        <p class="text-[11px] text-slate-400">Pencatatan pembukuan akuntansi double-entry</p>
-                    </div>
-                </div>
-                <a href="{{ route('akuntansi.jurnal') }}" class="text-xs text-amber-400 hover:underline">Buku Jurnal &rarr;</a>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800">
-                        <tr>
-                            <th class="py-2.5 px-3">No Transaksi</th>
-                            <th class="py-2.5 px-3">Tanggal</th>
-                            <th class="py-2.5 px-3">Deskripsi</th>
-                            <th class="py-2.5 px-3 text-right">Debit / Kredit</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800/60">
-                        @forelse($jurnalTerbaru as $j)
-                            <tr>
-                                <td class="py-3 px-3 font-bold text-amber-400">{{ $j->no_transaksi }}</td>
-                                <td class="py-3 px-3">{{ $j->tanggal->format('d/m/Y') }}</td>
-                                <td class="py-3 px-3 truncate max-w-[220px]">{{ $j->deskripsi }}</td>
-                                <td class="py-3 px-3 text-right font-bold text-white">Rp {{ number_format($j->total_debit, 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="py-4 text-center text-slate-500 italic">Belum ada jurnal transaksi.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Proyek Berjalan -->
-        <div class="lg:col-span-5 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
-                        <i class="fas fa-diagram-project"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Proyek Klien Berjalan</h3>
-                        <p class="text-[11px] text-slate-400">Kontrak & Progress Penagihan</p>
-                    </div>
-                </div>
-                <a href="{{ route('proyek.index') }}" class="text-xs text-amber-400 hover:underline">Kelola &rarr;</a>
-            </div>
-
-            <div class="space-y-3.5">
-                @forelse($proyekAktif as $p)
-                    <div class="p-3.5 rounded-2xl border border-slate-800 bg-slate-950/50">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-xs font-bold text-white truncate max-w-[200px]">{{ $p->nama_proyek }}</h4>
-                            <span class="text-[10px] text-amber-400 font-bold">{{ $p->progress_persen }}%</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Klien: {{ $p->nama_klien }}</p>
-                        
-                        <!-- Progress bar -->
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                            <div class="bg-amber-500 h-full rounded-full" style="width: {{ $p->progress_persen }}%"></div>
-                        </div>
-
-                        <div class="flex items-center justify-between text-[11px] mt-2 text-slate-300">
-                            <span>Kontrak: Rp {{ number_format($p->nilai_kontrak, 0, ',', '.') }}</span>
-                            <span class="text-emerald-400 font-bold">Tertagih: Rp {{ number_format($p->total_tertagih, 0, ',', '.') }}</span>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-xs text-slate-500 italic text-center py-4">Belum ada proyek berjalan.</p>
-                @endforelse
-            </div>
-        </div>
-    </div>
-
-    <!-- CUGIL Operasional Bisnis Daur Ulang Plastik (Cuci Giling) -->
-    <div class="rounded-3xl border border-blue-500/30 bg-gradient-to-r from-slate-900 via-[#0e1c31] to-slate-900 p-6 backdrop-blur-xl shadow-xl">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg border border-blue-500/30">
-                    <i class="fas fa-recycle"></i>
+    <!-- Proyek Berjalan -->
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                    <i class="fas fa-diagram-project"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-white">Operasional Cuci Giling (CUGIL) PT PBS</h3>
-                    <p class="text-xs text-slate-400">Pembelian Bahan Kresek &bull; Proses Cuci Giling &bull; Penjualan Produk Cacahan</p>
+                    <h3 class="text-sm font-bold text-white">Proyek Klien Berjalan</h3>
+                    <p class="text-[11px] text-slate-400">Kontrak & Progress Penagihan</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('cugil.po.index') }}" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">PO Bahan</a>
-                <a href="{{ route('cugil.raw.index') }}" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold">Terima Bahan</a>
-                <a href="{{ route('cugil.sales.index') }}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">Penjualan</a>
-            </div>
+            <a href="{{ route('proyek.index') }}" class="text-xs text-amber-400 hover:underline">Kelola &rarr;</a>
         </div>
 
-        {{-- CUGIL Metrics --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                <span class="text-[11px] text-slate-400 block">Total Penjualan CUGIL</span>
-                <strong class="text-base font-bold text-emerald-400 block mt-1">Rp {{ number_format($cugilTotalSales, 0, ',', '.') }}</strong>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                <span class="text-[11px] text-slate-400 block">Bahan Baku Masuk</span>
-                <strong class="text-base font-bold text-amber-400 block mt-1">Rp {{ number_format($cugilTotalRawTagihan, 0, ',', '.') }}</strong>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                <span class="text-[11px] text-slate-400 block">Total Mitra Supplier</span>
-                <strong class="text-base font-bold text-cyan-400 block mt-1">{{ $cugilTotalSupplier }} Mitra</strong>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                <span class="text-[11px] text-slate-400 block">Total Kastamer Pembeli</span>
-                <strong class="text-base font-bold text-purple-400 block mt-1">{{ $cugilTotalCustomer }} Pembeli</strong>
-            </div>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            @forelse($proyekAktif as $p)
+                <div class="p-3.5 rounded-2xl border border-slate-800 bg-slate-950/50">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-white truncate max-w-[200px]">{{ $p->nama_proyek }}</h4>
+                        <span class="text-[10px] text-amber-400 font-bold">{{ $p->progress_persen }}%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Klien: {{ $p->nama_klien }}</p>
+                    
+                    <!-- Progress bar -->
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-amber-500 h-full rounded-full" style="width: {{ $p->progress_persen }}%"></div>
+                    </div>
 
-        {{-- Two tables: Recent Raw Materials & Recent Sales --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {{-- Terima Bahan Terbaru --}}
-            <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fas fa-boxes-stacked mr-1.5"></i>Terima Bahan Terbaru</span>
-                    <a href="{{ route('cugil.raw.index') }}" class="text-[11px] text-slate-400 hover:text-white">Semua &rarr;</a>
+                    <div class="flex items-center justify-between text-[11px] mt-2 text-slate-300">
+                        <span>Kontrak: Rp {{ number_format($p->nilai_kontrak, 0, ',', '.') }}</span>
+                        <span class="text-emerald-400 font-bold">Tertagih: Rp {{ number_format($p->total_tertagih, 0, ',', '.') }}</span>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    @forelse($cugilRecentRaw as $r)
-                        @php
-                            $namaBarang = $r->items && $r->items->count() > 0 
-                                ? $r->items->pluck('nama_barang')->filter()->implode(', ') 
-                                : null;
-                        @endphp
-                        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
-                            <div>
-                                <span class="font-semibold text-white block">{{ $namaBarang ?: ($r->nama_pemasok ?? $r->kode_supplier) }}</span>
-                                <span class="text-[10px] text-slate-400">{{ $r->nama_pemasok }} &bull; {{ $r->tanggal ? $r->tanggal->format('d/m/Y') : '-' }}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-bold text-amber-400 block">{{ number_format($r->total_qty, 1, ',', '.') }} Kg</span>
-                                <span class="text-[10px] text-slate-300">Rp {{ number_format($r->tagihan, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-xs text-slate-500 italic py-2">Belum ada data terima bahan.</p>
-                    @endforelse
-                </div>
-            </div>
-
-            {{-- Penjualan Terbaru --}}
-            <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fas fa-hand-holding-dollar mr-1.5"></i>Penjualan CUGIL Terbaru</span>
-                    <a href="{{ route('cugil.sales.index') }}" class="text-[11px] text-slate-400 hover:text-white">Semua &rarr;</a>
-                </div>
-                <div class="space-y-2">
-                    @forelse($cugilRecentSales as $s)
-                        @php
-                            $namaBarang = $s->items && $s->items->count() > 0 
-                                ? $s->items->pluck('nama_barang')->filter()->implode(', ') 
-                                : null;
-                        @endphp
-                        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
-                            <div>
-                                <span class="font-semibold text-white block">{{ $namaBarang ?: ($s->nama_buyer ?? $s->kode_customer) }}</span>
-                                <span class="text-[10px] text-slate-400">{{ $s->nama_buyer }} &bull; {{ $s->tanggal ? $s->tanggal->format('d/m/Y') : '-' }}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-bold text-emerald-400 block">{{ number_format($s->total_qty, 1, ',', '.') }} Kg</span>
-                                <span class="text-[10px] text-white font-medium">Rp {{ number_format($s->tagihan, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-xs text-slate-500 italic py-2">Belum ada data penjualan.</p>
-                    @endforelse
-                </div>
-            </div>
+            @empty
+                <p class="text-xs text-slate-500 italic text-center py-4 col-span-full">Belum ada proyek berjalan.</p>
+            @endforelse
         </div>
     </div>
 </div>
