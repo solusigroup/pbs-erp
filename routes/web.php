@@ -32,6 +32,10 @@ Route::get('/', function () {
     return view('landing', compact('perusahaan', 'directors'));
 })->name('home');
 
+Route::get('/offline', function () {
+    return response()->file(public_path('offline.html'));
+})->name('pwa.offline');
+
 // ─── AUTHENTICATED / INTERNAL ────────────────────────────────────────────────
 Route::middleware(['auth'])->group(function () {
 

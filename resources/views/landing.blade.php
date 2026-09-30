@@ -10,6 +10,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}?v=2">
 
+    <!-- PWA Settings -->
+    @include('partials.pwa-head')
+
     <!-- Tailwind CSS CDN & Font Awesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -72,6 +75,12 @@
                 <a href="#modules" class="hover:text-[#1B4D3E] transition">Modul ERP &amp; Pajak</a>
                 <a href="#contact" class="hover:text-[#1B4D3E] transition">Kontak</a>
 
+                <!-- PWA Install Button (Desktop) -->
+                <button type="button" onclick="installPwaApp()" class="pwa-install-trigger hidden inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-500/30 px-3.5 py-2 text-xs font-bold transition shadow-sm" title="Pasang Aplikasi PBS-ERP di HP / Komputer">
+                    <i class="fas fa-download text-amber-600"></i>
+                    <span>Install App</span>
+                </button>
+
                 @auth
                     <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-full bg-[#F59E0B] hover:bg-[#d97706] text-white px-5 py-2.5 font-bold shadow-md shadow-amber-500/25 hover:-translate-y-0.5 transition duration-200">
                         <i class="fas fa-chart-pie"></i>
@@ -99,7 +108,12 @@
             <a href="#profil" class="block text-slate-700 hover:text-[#1B4D3E] font-medium py-1.5 border-b border-slate-100">Struktur Organisasi &amp; BOD</a>
             <a href="#modules" class="block text-slate-700 hover:text-[#1B4D3E] font-medium py-1.5 border-b border-slate-100">Modul ERP Intern</a>
             <a href="#contact" class="block text-slate-700 hover:text-[#1B4D3E] font-medium py-1.5 border-b border-slate-100">Kontak</a>
-            <div class="pt-3">
+            <div class="pt-3 space-y-2">
+                <!-- PWA Install Button (Mobile) -->
+                <button type="button" onclick="installPwaApp()" class="pwa-install-trigger hidden w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold text-xs shadow-sm">
+                    <i class="fas fa-download text-amber-600"></i>
+                    <span>Pasang Aplikasi PBS-ERP</span>
+                </button>
                 @auth
                     <a href="{{ route('dashboard') }}" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F59E0B] text-white font-bold shadow-md">
                         <i class="fas fa-chart-pie"></i>
@@ -1005,5 +1019,6 @@
             });
         }
     </script>
+    @include('partials.pwa-scripts')
 </body>
 </html>

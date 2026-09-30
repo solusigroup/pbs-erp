@@ -10,6 +10,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}?v=2">
 
+    <!-- PWA Settings -->
+    @include('partials.pwa-head')
+
     <!-- Tailwind CSS CDN & Font Awesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -358,6 +361,14 @@
                 </div>
             </div>
 
+            <!-- PWA Install Button (Sidebar) -->
+            <div class="pt-2 px-1">
+                <button type="button" onclick="installPwaApp()" class="pwa-install-trigger hidden w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm sidebar-link-item" title="Install Aplikasi PBS-ERP">
+                    <i class="fas fa-mobile-screen-button w-5 text-center text-sm text-amber-400"></i>
+                    <span class="sidebar-text">Install Aplikasi</span>
+                </button>
+            </div>
+
         </nav>
 
         <!-- Current User Profile / BOD Card -->
@@ -401,7 +412,13 @@
                 </span>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 sm:gap-4">
+                <!-- PWA Install Button (Header) -->
+                <button type="button" onclick="installPwaApp()" class="pwa-install-trigger hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm" title="Pasang Aplikasi PBS-ERP di Komputer / Ponsel Anda">
+                    <i class="fas fa-download text-xs text-amber-400"></i>
+                    <span class="hidden sm:inline">Install App</span>
+                </button>
+
                 <div class="text-right text-xs hidden sm:block">
                     <span class="text-slate-400 font-medium">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
                 </div>
@@ -524,5 +541,6 @@
         });
     </script>
     @stack('scripts')
+    @include('partials.pwa-scripts')
 </body>
 </html>

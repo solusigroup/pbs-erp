@@ -10,6 +10,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}?v=2">
     
+    <!-- PWA Settings -->
+    @include('partials.pwa-head')
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -128,13 +131,20 @@
 
         </div>
 
-        <div class="text-center mt-6">
-            <a href="{{ url('/') }}" class="text-xs text-slate-400 hover:text-amber-400 transition flex items-center justify-center gap-1.5">
-                <i class="fas fa-arrow-left text-[10px]"></i>
-                <span>Kembali ke Beranda Resmi PT Pinastika Bhakti Semesta</span>
-            </a>
+        <div class="text-center mt-6 space-y-3">
+            <button type="button" onclick="installPwaApp()" class="pwa-install-trigger hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold transition">
+                <i class="fas fa-download text-amber-400"></i>
+                <span>Pasang Aplikasi PBS-ERP di Layar Utama</span>
+            </button>
+            <div>
+                <a href="{{ url('/') }}" class="text-xs text-slate-400 hover:text-amber-400 transition inline-flex items-center justify-center gap-1.5">
+                    <i class="fas fa-arrow-left text-[10px]"></i>
+                    <span>Kembali ke Beranda Resmi PT Pinastika Bhakti Semesta</span>
+                </a>
+            </div>
         </div>
     </div>
 
+    @include('partials.pwa-scripts')
 </body>
 </html>

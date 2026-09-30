@@ -37,6 +37,9 @@
         <link rel="icon" href="{{ asset('favicon.svg') }}?v=2" type="image/svg+xml">
         <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}?v=2">
 
+        <!-- PWA Settings -->
+        @include('partials.pwa-head')
+
         @fonts
 
         @viteReactRefresh
@@ -47,5 +50,6 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
+        @include('partials.pwa-scripts')
     </body>
 </html>

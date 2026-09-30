@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - PBS-ERP PT Pinastika Bhakti Semesta</title>
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png">
+    <meta name="theme-color" content="#070f1e">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #070f1e;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .bg-glow-1 {
+            position: absolute;
+            top: -100px;
+            left: -100px;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(255, 140, 0, 0.12) 0%, rgba(7, 15, 30, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .bg-glow-2 {
+            position: absolute;
+            bottom: -120px;
+            right: -120px;
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(7, 15, 30, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .card {
+            background: #101d33;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 140, 0, 0.05);
+            border-radius: 1.25rem;
+            max-width: 480px;
+            width: 100%;
+            padding: 2.25rem 2rem;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+        .logo-wrap {
+            margin-bottom: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            border-radius: 1rem;
+            background: rgba(255, 140, 0, 0.08);
+            border: 1px solid rgba(255, 140, 0, 0.25);
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.15);
+        }
+        .logo-wrap img {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: 0.025em;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.01em;
+        }
+        p {
+            font-size: 0.925rem;
+            line-height: 1.55;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 0.925rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff8c00 0%, #e07b00 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(255, 140, 0, 0.35);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #ffa024 0%, #eb8405 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 140, 0, 0.45);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .hint {
+            margin-top: 1.25rem;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn.loading .spinner {
+            display: inline-block;
+        }
+        .btn.loading .btn-text {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="card">
+        <div class="logo-wrap">
+            <img src="/icons/icon-128x128.png" alt="PBS-ERP Logo" onerror="this.src='/favicon-32x32.png'">
+        </div>
+
+        <div>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                <span>Mode Offline Aktif</span>
+            </div>
+        </div>
+
+        <h1>Koneksi Internet Terputus</h1>
+        <p>Aplikasi PBS-ERP tidak dapat menjangkau server saat ini. Anda tetap dapat mengakses data yang telah tersimpan dalam cache perangkat.</p>
+
+        <div class="actions">
+            <button id="retry-btn" class="btn btn-primary" onclick="retryConnection()">
+                <span class="spinner" id="spinner"></span>
+                <span class="btn-text" id="btn-text">Coba Hubungkan Kembali</span>
+            </button>
+            <button class="btn btn-secondary" onclick="window.history.back()">
+                Halaman Sebelumnya
+            </button>
+        </div>
+
+        <p class="hint">Aplikasi akan otomatis memuat ulang saat koneksi internet Anda tersambung kembali.</p>
+    </div>
+
+    <script>
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                const btnText = document.getElementById('btn-text');
+                const badge = document.querySelector('.status-badge');
+                if (badge) {
+                    badge.style.background = 'rgba(34, 197, 94, 0.15)';
+                    badge.style.color = '#4ade80';
+                    badge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                    badge.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;"></span><span>Terhubung Kembali</span>';
+                }
+                if (btnText) btnText.textContent = 'Memuat ulang...';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+
+        function retryConnection() {
+            const btn = document.getElementById('retry-btn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btn-text');
+
+            btn.classList.add('loading');
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Memeriksa sinyal...';
+
+            fetch('/icons/icon-72x72.png?ping=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+                .then((res) => {
+                    if (res.ok) {
+                        btnText.textContent = 'Koneksi Berhasil! Memuat...';
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        throw new Error('Server not reachable');
+                    }
+                })
+                .catch(() => {
+                    setTimeout(() => {
+                        btn.classList.remove('loading');
+                        spinner.style.display = 'none';
+                        btnText.textContent = 'Gagal, Coba Lagi';
+                    }, 1000);
+                });
+        }
+    </script>
+</body>
+</html>
