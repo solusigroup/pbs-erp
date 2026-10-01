@@ -214,8 +214,8 @@
             {{-- Header Form --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
                 <div>
-                    <label class="block text-xs font-medium text-gray-300 mb-1">Nomor PO *</label>
-                    <input type="text" name="nomor_po" value="{{ date('d') }}/PBS/{{ date('n/Y') }}" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm" required>
+                    <label class="block text-xs font-medium text-gray-300 mb-1">Nomor PO <span class="text-amber-400 text-[10px]">(Otomatis)</span></label>
+                    <input type="text" name="nomor_po" value="{{ $nextNomorPO }}" class="w-full bg-gray-950 border border-gray-600 text-blue-400 font-mono font-semibold rounded-lg px-3 py-2 text-sm cursor-not-allowed" readonly>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal PO *</label>

@@ -41,16 +41,16 @@ class CugilTransaksiController extends Controller
         $totalPO = CugilPurchaseOrder::count();
         $totalQty = CugilPurchaseOrder::sum('total_qty');
         $totalNilai = CugilPurchaseOrder::sum('total_nilai');
+        $nextNomorPO = CugilPurchaseOrder::generateNextNomorPO();
 
         return view('cugil.purchase-order', compact(
-            'purchaseOrders', 'suppliers', 'barangs', 'totalPO', 'totalQty', 'totalNilai'
+            'purchaseOrders', 'suppliers', 'barangs', 'totalPO', 'totalQty', 'totalNilai', 'nextNomorPO'
         ));
     }
 
     public function storePurchaseOrder(Request $request)
     {
         $request->validate([
-            'nomor_po' => 'required|string|max:30|unique:cugil_purchase_orders,nomor_po',
             'tanggal' => 'required|date',
             'kode_supplier' => 'required|string',
             'items' => 'required|array|min:1',
@@ -59,7 +59,12 @@ class CugilTransaksiController extends Controller
             'items.*.harga_satuan' => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $nomorPO = null;
+
+        DB::transaction(function () use ($request, &$nomorPO) {
+            // Generate nomor PO otomatis di dalam transaksi (thread-safe)
+            $nomorPO = CugilPurchaseOrder::generateNextNomorPO();
+
             $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
                 ->orWhere('nama_supplier', $request->kode_supplier)
                 ->first();
@@ -77,7 +82,7 @@ class CugilTransaksiController extends Controller
             }
 
             $po = CugilPurchaseOrder::create([
-                'nomor_po' => $request->nomor_po,
+                'nomor_po' => $nomorPO,
                 'tanggal' => $request->tanggal,
                 'kode_supplier' => $kodeSupplier,
                 'nama_vendor' => $namaVendor,
@@ -108,7 +113,7 @@ class CugilTransaksiController extends Controller
         });
 
         // Auto-inisialisasi workflow checklist untuk PO baru
-        $newPo = CugilPurchaseOrder::where('nomor_po', $request->nomor_po)->first();
+        $newPo = CugilPurchaseOrder::where('nomor_po', $nomorPO)->first();
         if ($newPo) {
             WorkflowService::initializeChecklist(
                 'cugil_po', CugilPurchaseOrder::class, $newPo->id, $newPo->nomor_po,
@@ -116,7 +121,13 @@ class CugilTransaksiController extends Controller
             );
         }
 
-        return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $request->nomor_po . ' dengan ' . count($request->items) . ' item barang berhasil dibuat.');
+        // Auto-Generate Jurnal untuk Ongkos Angkut PO jika ada
+        if ($newPo) {
+            $jurnalService = app(\App\Services\JurnalAutoService::class);
+            $jurnalService->createJurnalOngkosAngkutPO($newPo);
+        }
+
+        return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $nomorPO . ' dengan ' . count($request->items) . ' item barang berhasil dibuat.');
     }
 
     public function updatePurchaseOrder(Request $request, $id)
@@ -183,6 +194,11 @@ class CugilTransaksiController extends Controller
         });
 
         $po = CugilPurchaseOrder::findOrFail($id);
+        
+        // Auto-Generate Jurnal untuk Ongkos Angkut PO jika ada
+        $jurnalService = app(\App\Services\JurnalAutoService::class);
+        $jurnalService->createJurnalOngkosAngkutPO($po);
+        
         return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $po->nomor_po . ' berhasil diperbarui.');
     }
 

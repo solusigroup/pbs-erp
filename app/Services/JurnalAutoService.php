@@ -34,6 +34,7 @@ class JurnalAutoService
     const PREFIX_PENJUALAN = 'JU-AUTO-JUL';
     const PREFIX_PELUNASAN_HUTANG = 'JU-AUTO-PLH';
     const PREFIX_PELUNASAN_PIUTANG = 'JU-AUTO-PLP';
+    const PREFIX_PO_ONGKOS = 'JU-AUTO-PO';
 
     // ─── PEMBELIAN BAHAN BAKU ────────────────────────────────────────────────────
 
@@ -119,6 +120,64 @@ class JurnalAutoService
         $deskripsi = "[AUTO] Pembelian bahan baku - {$namaSupplier} (PO: {$nomorPO})";
 
         return $this->createDraftJurnal($noTransaksi, $tanggal, 'Umum', $deskripsi, $refKey, $tagihan, $tagihan, $details);
+    }
+
+    /**
+     * Buat jurnal draft untuk Ongkos Angkut saat PO dibuat.
+     * 
+     * Dr. 5-1500 (B.2.c ONGKOS ANGKUT PEMBELIAN+TIMBANG) .... ongkos_angkut
+     *     Cr. 1-1210 Kas/Bank ............................... ongkos_angkut
+     */
+    public function createJurnalOngkosAngkutPO(CugilPurchaseOrder $po): ?JurnalUmum
+    {
+        $ongkos = (float) $po->ongkos_angkut;
+        
+        if ($ongkos <= 0) {
+            return null; // Tidak perlu buat jurnal jika 0
+        }
+
+        // Anti duplikasi
+        $refKey = 'AUTO-PO-ONGKOS-' . $po->id;
+        if ($this->jurnalExists($refKey)) {
+            return null;
+        }
+
+        // Pastikan akun B.2.c ada di database, jika belum buat otomatis
+        $akunOngkosBeli = \App\Models\Akun::firstOrCreate(
+            ['kode_akun' => '5-1500'],
+            [
+                'nama_akun' => 'B.2.c Ongkos Angkut Pembelian & Timbang (CUGIL)',
+                'kategori' => 'Beban',
+                'tipe_akun' => 'HPP',
+                'saldo_normal' => 'Debit',
+                'is_active' => true,
+            ]
+        );
+
+        $noTransaksi = $this->generateNoTransaksi(self::PREFIX_PO_ONGKOS, $po->tanggal);
+        $tanggal = $po->tanggal->format('Y-m-d');
+        
+        $details = [];
+
+        // Debit: Ongkos Angkut
+        $details[] = [
+            'kode_akun' => '5-1500',
+            'keterangan_baris' => "Biaya ongkos angkut & timbang untuk PO: {$po->nomor_po} ({$po->nama_vendor})",
+            'debit' => $ongkos,
+            'kredit' => 0,
+        ];
+
+        // Kredit: Kas/Bank
+        $details[] = [
+            'kode_akun' => self::DEFAULT_KAS_CODE,
+            'keterangan_baris' => "Pembayaran ongkos angkut & timbang PO: {$po->nomor_po}",
+            'debit' => 0,
+            'kredit' => $ongkos,
+        ];
+
+        $deskripsi = "[AUTO] Ongkos Angkut & Timbang - {$po->nama_vendor} (PO: {$po->nomor_po})";
+
+        return $this->createDraftJurnal($noTransaksi, $tanggal, 'Umum', $deskripsi, $refKey, $ongkos, $ongkos, $details);
     }
 
     // ─── PENJUALAN BARANG JADI ───────────────────────────────────────────────────

@@ -36,4 +36,22 @@ class CugilPurchaseOrder extends Model
     {
         return $this->hasMany(CugilRawMaterial::class, 'nomor_po', 'nomor_po');
     }
+
+    /**
+     * Generate nomor PO berikutnya secara otomatis.
+     * Format: XXXXX/PBS/M/YYYY
+     * - XXXXX = urutan global 5-digit (zero-padded), melanjutkan dari nomor terbesar di DB
+     * - M     = bulan masehi (tanpa leading zero)
+     * - YYYY  = tahun masehi
+     */
+    public static function generateNextNomorPO(): string
+    {
+        $maxSeq = static::where('nomor_po', 'like', '%/PBS/%')
+            ->selectRaw('MAX(CAST(SUBSTRING_INDEX(nomor_po, "/", 1) AS UNSIGNED)) as max_seq')
+            ->value('max_seq');
+
+        $nextSeq = ($maxSeq ?? 0) + 1;
+
+        return str_pad($nextSeq, 5, '0', STR_PAD_LEFT) . '/PBS/' . date('n') . '/' . date('Y');
+    }
 }
