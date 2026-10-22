@@ -68,8 +68,8 @@ class CugilTransaksiController extends Controller
             $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
                 ->orWhere('nama_supplier', $request->kode_supplier)
                 ->first();
-            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
-            $namaVendor = $sup ? $sup->nama_supplier : $request->kode_supplier;
+            $kodeSupplier = $sup ? $sup->kode_supplier : substr($request->kode_supplier, 0, 20);
+            $namaVendor = $sup ? $sup->nama_supplier : substr($request->kode_supplier, 0, 100);
 
             $totalQty = 0;
             $totalNilai = 0;
@@ -81,6 +81,8 @@ class CugilTransaksiController extends Controller
                 $totalNilai += ($qty * $hrg);
             }
 
+            $ongkosAngkut = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
+
             $po = CugilPurchaseOrder::create([
                 'nomor_po' => $nomorPO,
                 'tanggal' => $request->tanggal,
@@ -89,7 +91,7 @@ class CugilTransaksiController extends Controller
                 'total_qty' => $totalQty,
                 'total_nilai' => $totalNilai,
                 'termin_payment' => $request->termin_payment ?? 'BELI PUTUS',
-                'ongkos_angkut' => $request->ongkos_angkut ?? 0,
+                'ongkos_angkut' => $ongkosAngkut,
                 'batas_tanggal' => $request->batas_tanggal,
                 'petugas' => $request->petugas ?? auth()->user()->name ?? 'WINARDI',
                 'keterangan' => $request->keterangan,
@@ -101,10 +103,10 @@ class CugilTransaksiController extends Controller
                 $hrg = (float) $item['harga_satuan'];
                 CugilPurchaseOrderItem::create([
                     'cugil_po_id' => $po->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty' => $qty,
-                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'satuan' => substr($item['satuan'] ?? 'Kg', 0, 10),
                     'harga_satuan' => $hrg,
                     'harga_total' => $qty * $hrg,
                     'catatan' => $item['catatan'] ?? null,
@@ -115,16 +117,20 @@ class CugilTransaksiController extends Controller
         // Auto-inisialisasi workflow checklist untuk PO baru
         $newPo = CugilPurchaseOrder::where('nomor_po', $nomorPO)->first();
         if ($newPo) {
-            WorkflowService::initializeChecklist(
-                'cugil_po', CugilPurchaseOrder::class, $newPo->id, $newPo->nomor_po,
-                'po_created', auth()->user()->name ?? 'System'
-            );
+            rescue(function () use ($newPo) {
+                WorkflowService::initializeChecklist(
+                    'cugil_po', CugilPurchaseOrder::class, $newPo->id, $newPo->nomor_po,
+                    'po_created', auth()->user()->name ?? 'System'
+                );
+            });
         }
 
         // Auto-Generate Jurnal untuk Ongkos Angkut PO jika ada
         if ($newPo) {
-            $jurnalService = app(\App\Services\JurnalAutoService::class);
-            $jurnalService->createJurnalOngkosAngkutPO($newPo);
+            rescue(function () use ($newPo) {
+                $jurnalService = app(\App\Services\JurnalAutoService::class);
+                $jurnalService->createJurnalOngkosAngkutPO($newPo);
+            });
         }
 
         return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $nomorPO . ' dengan ' . count($request->items) . ' item barang berhasil dibuat.');
@@ -147,8 +153,8 @@ class CugilTransaksiController extends Controller
             $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
                 ->orWhere('nama_supplier', $request->kode_supplier)
                 ->first();
-            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
-            $namaVendor = $sup ? $sup->nama_supplier : $request->kode_supplier;
+            $kodeSupplier = $sup ? $sup->kode_supplier : substr($request->kode_supplier, 0, 20);
+            $namaVendor = $sup ? $sup->nama_supplier : substr($request->kode_supplier, 0, 100);
 
             $totalQty = 0;
             $totalNilai = 0;
@@ -160,6 +166,8 @@ class CugilTransaksiController extends Controller
                 $totalNilai += ($qty * $hrg);
             }
 
+            $ongkosAngkut = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
+
             // Note: nomor_po is immutable / not updated
             $po->update([
                 'tanggal' => $request->tanggal,
@@ -168,7 +176,7 @@ class CugilTransaksiController extends Controller
                 'total_qty' => $totalQty,
                 'total_nilai' => $totalNilai,
                 'termin_payment' => $request->termin_payment ?? 'BELI PUTUS',
-                'ongkos_angkut' => $request->ongkos_angkut ?? 0,
+                'ongkos_angkut' => $ongkosAngkut,
                 'batas_tanggal' => $request->batas_tanggal,
                 'petugas' => $request->petugas ?? auth()->user()->name ?? 'WINARDI',
                 'keterangan' => $request->keterangan,
@@ -182,10 +190,10 @@ class CugilTransaksiController extends Controller
                 $hrg = (float) $item['harga_satuan'];
                 CugilPurchaseOrderItem::create([
                     'cugil_po_id' => $po->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty' => $qty,
-                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'satuan' => substr($item['satuan'] ?? 'Kg', 0, 10),
                     'harga_satuan' => $hrg,
                     'harga_total' => $qty * $hrg,
                     'catatan' => $item['catatan'] ?? null,
@@ -196,8 +204,10 @@ class CugilTransaksiController extends Controller
         $po = CugilPurchaseOrder::findOrFail($id);
         
         // Auto-Generate Jurnal untuk Ongkos Angkut PO jika ada
-        $jurnalService = app(\App\Services\JurnalAutoService::class);
-        $jurnalService->createJurnalOngkosAngkutPO($po);
+        rescue(function () use ($po) {
+            $jurnalService = app(\App\Services\JurnalAutoService::class);
+            $jurnalService->createJurnalOngkosAngkutPO($po);
+        });
         
         return redirect()->route('cugil.po.index')->with('success', 'Purchase Order ' . $po->nomor_po . ' berhasil diperbarui.');
     }
@@ -959,11 +969,33 @@ class CugilTransaksiController extends Controller
         return view('cugil.print.faktur-pajak', compact('sale', 'perusahaan'));
     }
 
+    public function showPurchaseOrder($id)
+    {
+        $po = CugilPurchaseOrder::with(['supplier', 'items.barang', 'rawMaterials'])->findOrFail($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($po);
+        }
+
+        return redirect()->route('cugil.po.print', $id);
+    }
+
     public function printPurchaseOrder($id)
     {
         $po = CugilPurchaseOrder::with(['supplier', 'items'])->findOrFail($id);
         $perusahaan = Perusahaan::first();
         return view('cugil.print.purchase-order', compact('po', 'perusahaan'));
+    }
+
+    public function showRawMaterial($id)
+    {
+        $raw = CugilRawMaterial::with(['supplier', 'items.barang', 'purchaseOrder'])->findOrFail($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($raw);
+        }
+
+        return redirect()->route('cugil.raw.tanda-terima', $id);
     }
 
     public function printTandaTerimaRaw($id)

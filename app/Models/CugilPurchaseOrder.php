@@ -46,12 +46,21 @@ class CugilPurchaseOrder extends Model
      */
     public static function generateNextNomorPO(): string
     {
-        $maxSeq = static::where('nomor_po', 'like', '%/PBS/%')
-            ->selectRaw('MAX(CAST(SUBSTRING_INDEX(nomor_po, "/", 1) AS UNSIGNED)) as max_seq')
-            ->value('max_seq');
+        $maxSeq = rescue(function () {
+            return static::where('nomor_po', 'like', '%/PBS/%')
+                ->whereRaw("nomor_po REGEXP '^[0-9]+/'")
+                ->selectRaw('MAX(CAST(SUBSTRING_INDEX(nomor_po, "/", 1) AS UNSIGNED)) as max_seq')
+                ->value('max_seq');
+        }, null);
 
-        $nextSeq = ($maxSeq ?? 0) + 1;
+        $nextSeq = ((int) ($maxSeq ?? 0)) + 1;
+        $candidate = str_pad($nextSeq, 5, '0', STR_PAD_LEFT) . '/PBS/' . date('n') . '/' . date('Y');
 
-        return str_pad($nextSeq, 5, '0', STR_PAD_LEFT) . '/PBS/' . date('n') . '/' . date('Y');
+        while (static::where('nomor_po', $candidate)->exists()) {
+            $nextSeq++;
+            $candidate = str_pad($nextSeq, 5, '0', STR_PAD_LEFT) . '/PBS/' . date('n') . '/' . date('Y');
+        }
+
+        return $candidate;
     }
 }

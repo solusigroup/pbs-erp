@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Akun;
+use App\Models\CugilPurchaseOrder;
 use App\Models\CugilRawMaterial;
 use App\Models\CugilSale;
 use App\Models\JurnalDetail;

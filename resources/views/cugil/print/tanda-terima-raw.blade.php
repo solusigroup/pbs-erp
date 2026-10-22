@@ -100,6 +100,14 @@
                         <td class="text-slate-800">: {{ $raw->petugas ?? 'QC & Timbangan PBS' }}</td>
                     </tr>
                     <tr>
+                        <td class="text-slate-500 py-0.5">Ongkir / Angkut</td>
+                        <td class="font-mono font-semibold text-slate-900">: Rp {{ number_format($raw->ongkos_angkut ?? 0, 0, ',', '.') }}
+                            @if(!empty($raw->status_truk_lunas))
+                                <span class="ml-1 text-[9px] px-1.5 py-0.5 rounded font-sans font-bold uppercase {{ in_array(strtoupper($raw->status_truk_lunas), ['LUNAS', 'YA']) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">({{ $raw->status_truk_lunas }})</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
                         <td class="text-slate-500 py-0.5">Status Pelunasan</td>
                         <td>: 
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $raw->status_lunas == 'LUNAS' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
@@ -167,9 +175,23 @@
                     <tr class="bg-slate-100 font-bold border-t-2 border-slate-900 text-xs">
                         <td colspan="2" class="border border-slate-400 py-2 px-3 text-right uppercase">TOTAL NETTO:</td>
                         <td class="border border-slate-400 py-2 px-3 text-right font-mono">{{ number_format($raw->total_qty, 1, ',', '.') }} Kg</td>
-                        <td colspan="3" class="border border-slate-400 py-2 px-3 text-right uppercase">TOTAL TAGIHAN BERSIH:</td>
-                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-sm text-slate-950">
+                        <td colspan="3" class="border border-slate-400 py-2 px-3 text-right uppercase">SUBTOTAL TAGIHAN BAHAN:</td>
+                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-xs text-slate-900">
                             Rp {{ number_format($raw->tagihan, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr class="bg-white font-semibold text-xs">
+                        <td colspan="3" class="border-0"></td>
+                        <td colspan="3" class="border border-slate-400 py-1.5 px-3 text-right uppercase text-slate-700">ONGKIR / ONGKOS ANGKUT:</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-right font-mono text-xs text-slate-800">
+                            Rp {{ number_format($raw->ongkos_angkut ?? 0, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr class="bg-slate-100 font-bold text-xs border-t-2 border-slate-900">
+                        <td colspan="3" class="border-0"></td>
+                        <td colspan="3" class="border border-slate-400 py-2 px-3 text-right uppercase text-slate-950 font-black">TOTAL KESELURUHAN (+ONGKIR):</td>
+                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-sm font-black text-slate-950">
+                            Rp {{ number_format($raw->tagihan + ($raw->ongkos_angkut ?? 0), 0, ',', '.') }}
                         </td>
                     </tr>
                 </tfoot>
@@ -177,21 +199,31 @@
         </div>
 
         <!-- Financial Status -->
-        <div class="mt-3 p-3 border border-slate-300 rounded-xl bg-slate-50 text-xs grid grid-cols-3 gap-3">
+        <div class="mt-3 p-3 border border-slate-300 rounded-xl bg-slate-50 text-xs grid grid-cols-4 gap-3">
             <div>
-                <span class="text-[10px] text-slate-500 block uppercase font-semibold">Total Tagihan</span>
+                <span class="text-[10px] text-slate-500 block uppercase font-semibold">Tagihan Bahan</span>
                 <span class="font-mono text-slate-900 font-bold">Rp {{ number_format($raw->tagihan, 0, ',', '.') }}</span>
+            </div>
+            <div>
+                <span class="text-[10px] text-slate-500 block uppercase font-semibold">Ongkir / Angkut</span>
+                <span class="font-mono text-indigo-700 font-bold">Rp {{ number_format($raw->ongkos_angkut ?? 0, 0, ',', '.') }}</span>
             </div>
             <div>
                 <span class="text-[10px] text-slate-500 block uppercase font-semibold">Telah Dibayar</span>
                 <span class="font-mono text-emerald-700 font-bold">Rp {{ number_format($raw->payment, 0, ',', '.') }}</span>
             </div>
             <div>
-                <span class="text-[10px] text-slate-500 block uppercase font-semibold">Sisa Hutang ke TPST</span>
+                <span class="text-[10px] text-slate-500 block uppercase font-semibold">Sisa Tagihan</span>
                 <span class="font-mono {{ $raw->sisa_tagihan > 0 ? 'text-rose-700' : 'text-slate-600' }} font-bold">
                     Rp {{ number_format($raw->sisa_tagihan, 0, ',', '.') }}
                 </span>
             </div>
+        </div>
+
+        <!-- Terbilang -->
+        <div class="mt-3 p-3 border border-slate-300 rounded-xl bg-slate-50 text-xs">
+            <span class="text-slate-600 font-semibold">Terbilang Total:</span> 
+            <span class="font-bold text-slate-950 italic font-mono">{{ \App\Helpers\TerbilangHelper::make($raw->tagihan + ($raw->ongkos_angkut ?? 0)) }}</span>
         </div>
 
         <!-- 3-Tier Signature Block -->

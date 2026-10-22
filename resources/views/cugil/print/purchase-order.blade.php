@@ -100,6 +100,10 @@
                         <td class="font-semibold text-slate-900">: {{ $po->termin_payment ?? 'Beli Putus / Timbang Bayar' }}</td>
                     </tr>
                     <tr>
+                        <td class="text-slate-500 py-0.5">Ongkir / Angkut</td>
+                        <td class="font-mono font-semibold text-slate-900">: Rp {{ number_format($po->ongkos_angkut ?? 0, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
                         <td class="text-slate-500 py-0.5">Petugas / Buyer</td>
                         <td class="text-slate-800">: {{ $po->petugas ?? 'Tim Pengadaan PBS' }}</td>
                     </tr>
@@ -149,9 +153,23 @@
                     <tr class="bg-slate-100 font-bold border-t-2 border-slate-900 text-xs">
                         <td colspan="2" class="border border-slate-400 py-2 px-3 text-right uppercase">TOTAL VOLUME:</td>
                         <td class="border border-slate-400 py-2 px-3 text-right font-mono">{{ number_format($po->total_qty, 1, ',', '.') }} Kg</td>
-                        <td class="border border-slate-400 py-2 px-3 text-right uppercase">TOTAL NILAI PO:</td>
-                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-sm text-slate-950">
+                        <td class="border border-slate-400 py-2 px-3 text-right uppercase">SUBTOTAL NILAI BARANG:</td>
+                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-xs text-slate-900">
                             Rp {{ number_format($po->total_nilai, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr class="bg-white font-semibold text-xs">
+                        <td colspan="3" class="border-0"></td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-right uppercase text-slate-700">ONGKIR / ONGKOS ANGKUT:</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-right font-mono text-xs text-slate-800">
+                            Rp {{ number_format($po->ongkos_angkut ?? 0, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr class="bg-slate-100 font-bold text-xs border-t-2 border-slate-900">
+                        <td colspan="3" class="border-0"></td>
+                        <td class="border border-slate-400 py-2 px-3 text-right uppercase text-slate-950 font-black">GRAND TOTAL NILAI PO:</td>
+                        <td class="border border-slate-400 py-2 px-3 text-right font-mono text-sm font-black text-slate-950">
+                            Rp {{ number_format($po->total_nilai + ($po->ongkos_angkut ?? 0), 0, ',', '.') }}
                         </td>
                     </tr>
                 </tfoot>
@@ -161,7 +179,7 @@
         <!-- Terbilang -->
         <div class="mt-3 p-3 border border-slate-300 rounded-xl bg-slate-50 text-xs">
             <span class="text-slate-600 font-semibold">Terbilang:</span> 
-            <span class="font-bold text-slate-950 italic font-mono">{{ \App\Helpers\TerbilangHelper::make($po->total_nilai) }}</span>
+            <span class="font-bold text-slate-950 italic font-mono">{{ \App\Helpers\TerbilangHelper::make($po->total_nilai + ($po->ongkos_angkut ?? 0)) }}</span>
         </div>
 
         <!-- Dynamic Document Signatures -->

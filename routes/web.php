@@ -72,6 +72,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('po')->name('po.')->group(function () {
             Route::get('/',             [CugilTransaksiController::class, 'purchaseOrders'])->name('index');
             Route::post('/',            [CugilTransaksiController::class, 'storePurchaseOrder'])->name('store');
+            Route::get('/{id}',         [CugilTransaksiController::class, 'showPurchaseOrder'])->name('show');
             Route::put('/{id}',         [CugilTransaksiController::class, 'updatePurchaseOrder'])->name('update');
             Route::get('/{id}/print',   [CugilTransaksiController::class, 'printPurchaseOrder'])->name('print');
             Route::delete('/{id}',      [CugilTransaksiController::class, 'destroyPurchaseOrder'])->name('destroy');
@@ -81,6 +82,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('raw')->name('raw.')->group(function () {
             Route::get('/',                 [CugilTransaksiController::class, 'rawMaterials'])->name('index');
             Route::post('/',                [CugilTransaksiController::class, 'storeRawMaterial'])->name('store');
+            Route::get('/{id}',             [CugilTransaksiController::class, 'showRawMaterial'])->name('show');
             Route::put('/{id}',             [CugilTransaksiController::class, 'updateRawMaterial'])->name('update');
             Route::put('/{id}/status',      [CugilTransaksiController::class, 'updateRawMaterialStatus'])->name('updateStatus');
             Route::get('/{id}/tanda-terima',[CugilTransaksiController::class, 'printTandaTerimaRaw'])->name('tanda-terima');
