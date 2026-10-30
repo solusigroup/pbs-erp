@@ -268,8 +268,8 @@ class CugilTransaksiController extends Controller
             $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
                 ->orWhere('nama_supplier', $request->kode_supplier)
                 ->lockForUpdate()->first();
-            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
-            $namaPemasok = $sup ? $sup->nama_supplier : $request->kode_supplier;
+            $kodeSupplier = $sup ? $sup->kode_supplier : substr($request->kode_supplier, 0, 20);
+            $namaPemasok = $sup ? $sup->nama_supplier : substr($request->kode_supplier, 0, 100);
 
             $totalQty = 0;
             $totalBruto = 0;
@@ -284,8 +284,9 @@ class CugilTransaksiController extends Controller
                 $totalRafaksi += $raf;
             }
 
+            $ongkir = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
             $tagihan = max(0, $totalBruto - $totalRafaksi);
-            $payment = (float) ($request->payment ?? 0);
+            $payment = !empty($request->payment) ? (float) $request->payment : 0;
             $sisa = max(0, $tagihan - $payment);
             $statusLunas = $sisa <= 0 && $tagihan > 0 ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
 
@@ -298,12 +299,12 @@ class CugilTransaksiController extends Controller
                 'total_qty' => $totalQty,
                 'total_bruto' => $totalBruto,
                 'total_rafaksi' => $totalRafaksi,
-                'ongkos_angkut' => $request->ongkos_angkut ?? 0,
+                'ongkos_angkut' => $ongkir,
                 'tagihan' => $tagihan,
                 'payment' => $payment,
                 'sisa_tagihan' => $sisa,
                 'status_lunas' => $statusLunas,
-                'truk' => $request->truk,
+                'truk' => !empty($request->truk) ? substr($request->truk, 0, 50) : null,
                 'status_truk_lunas' => $request->status_truk_lunas ?? 'BELUM',
                 'timbangan' => $request->timbangan,
                 'invoiced' => 'BELUM',
@@ -319,12 +320,20 @@ class CugilTransaksiController extends Controller
                 $raf = (float) ($item['diskon_rafaksi'] ?? 0);
                 $subtotal = ($qty * $hrg) - $raf;
 
+                $kodeBarang = !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null;
+                if (!$kodeBarang && !empty($item['nama_barang'])) {
+                    $brgFound = CugilBarang::where('nama_barang', $item['nama_barang'])->first();
+                    if ($brgFound) {
+                        $kodeBarang = $brgFound->kode_barang;
+                    }
+                }
+
                 CugilRawItem::create([
                     'cugil_raw_id' => $raw->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => $kodeBarang,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty' => $qty,
-                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'satuan' => substr($item['satuan'] ?? 'Kg', 0, 10),
                     'harga_satuan' => $hrg,
                     'harga_total' => $qty * $hrg,
                     'diskon_rafaksi' => $raf,
@@ -333,8 +342,8 @@ class CugilTransaksiController extends Controller
                 ]);
 
                 // Update stok masuk di master barang secara aman (Pessimistic Lock)
-                if (!empty($item['kode_barang'])) {
-                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                if (!empty($kodeBarang)) {
+                    $brg = CugilBarang::where('kode_barang', $kodeBarang)->lockForUpdate()->first();
                     if ($brg) {
                         $brg->barang_masuk += $qty;
                         $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
@@ -351,30 +360,38 @@ class CugilTransaksiController extends Controller
                     $po->save();
                 }
             }
-            
-            // Generate Jurnal DRAFT otomatis
-            $jurnalService = new JurnalAutoService();
-            $jurnalService->createJurnalPembelian($raw);
         });
 
-        // Auto-inisialisasi workflow checklist untuk Raw Material
+        // Cari record Raw Material yang baru dibuat
         $newRaw = CugilRawMaterial::where('tanggal', $request->tanggal)
-            ->where('kode_supplier', $request->kode_supplier)
+            ->where('kode_supplier', substr($request->kode_supplier, 0, 20))
             ->latest()->first();
-        if ($newRaw) {
-            $refCode = $newRaw->nomor_po ?? 'RAW-' . $newRaw->id;
-            WorkflowService::initializeChecklist(
-                'cugil_raw', CugilRawMaterial::class, $newRaw->id, $refCode,
-                'raw_received', auth()->user()->name ?? 'System'
-            );
 
-            // Jika PO terkait, auto-complete langkah "Barang Diterima" di workflow PO
-            if (!empty($request->nomor_po)) {
-                $po = CugilPurchaseOrder::where('nomor_po', $request->nomor_po)->first();
-                if ($po) {
-                    WorkflowService::completeStep('cugil_po', $po->id, 'po_received', auth()->user()->name ?? 'System', 'Otomatis: barang diterima via RAW Material');
+        // Generate Jurnal DRAFT otomatis secara aman
+        if ($newRaw) {
+            rescue(function () use ($newRaw) {
+                $jurnalService = app(\App\Services\JurnalAutoService::class);
+                $jurnalService->createJurnalPembelian($newRaw);
+            });
+        }
+
+        // Auto-inisialisasi workflow checklist untuk Raw Material secara aman
+        if ($newRaw) {
+            rescue(function () use ($newRaw, $request) {
+                $refCode = $newRaw->nomor_po ?? 'RAW-' . $newRaw->id;
+                WorkflowService::initializeChecklist(
+                    'cugil_raw', CugilRawMaterial::class, $newRaw->id, $refCode,
+                    'raw_received', auth()->user()->name ?? 'System'
+                );
+
+                // Jika PO terkait, auto-complete langkah "Barang Diterima" di workflow PO
+                if (!empty($request->nomor_po)) {
+                    $po = CugilPurchaseOrder::where('nomor_po', $request->nomor_po)->first();
+                    if ($po) {
+                        WorkflowService::completeStep('cugil_po', $po->id, 'po_received', auth()->user()->name ?? 'System', 'Otomatis: barang diterima via RAW Material');
+                    }
                 }
-            }
+            });
         }
 
         $msg = 'Penerimaan bahan baku (' . count($request->items) . ' SKU barang) berhasil dicatat.';
@@ -415,12 +432,12 @@ class CugilTransaksiController extends Controller
             // 2. Delete old items
             $raw->items()->delete();
 
-            // 3. Supplier lookup
+            // 3. Supplier lookup with length guards
             $sup = CugilSupplier::where('kode_supplier', $request->kode_supplier)
                 ->orWhere('nama_supplier', $request->kode_supplier)
                 ->first();
-            $kodeSupplier = $sup ? $sup->kode_supplier : $request->kode_supplier;
-            $namaPemasok = $sup ? $sup->nama_supplier : $request->kode_supplier;
+            $kodeSupplier = $sup ? $sup->kode_supplier : substr($request->kode_supplier, 0, 20);
+            $namaPemasok = $sup ? $sup->nama_supplier : substr($request->kode_supplier, 0, 100);
 
             // 4. Calculate totals
             $totalQty = 0;
@@ -436,8 +453,9 @@ class CugilTransaksiController extends Controller
                 $totalRafaksi += $raf;
             }
 
+            $ongkir = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
             $tagihan = max(0, $totalBruto - $totalRafaksi);
-            $payment = isset($request->payment) ? (float) $request->payment : (float) $raw->payment;
+            $payment = isset($request->payment) && $request->payment !== '' ? (float) $request->payment : (float) $raw->payment;
             $sisa = max(0, $tagihan - $payment);
             $statusLunas = $sisa <= 0 && $tagihan > 0 ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
 
@@ -450,12 +468,12 @@ class CugilTransaksiController extends Controller
                 'total_qty' => $totalQty,
                 'total_bruto' => $totalBruto,
                 'total_rafaksi' => $totalRafaksi,
-                'ongkos_angkut' => $request->ongkos_angkut ?? $raw->ongkos_angkut,
+                'ongkos_angkut' => $ongkir,
                 'tagihan' => $tagihan,
                 'payment' => $payment,
                 'sisa_tagihan' => $sisa,
                 'status_lunas' => $statusLunas,
-                'truk' => $request->truk ?? $raw->truk,
+                'truk' => !empty($request->truk) ? substr($request->truk, 0, 50) : $raw->truk,
                 'status_truk_lunas' => $request->status_truk_lunas ?? $raw->status_truk_lunas,
                 'timbangan' => $request->timbangan ?? $raw->timbangan,
                 'petugas' => $request->petugas ?? $raw->petugas,
@@ -471,12 +489,20 @@ class CugilTransaksiController extends Controller
                 $raf = (float) ($item['diskon_rafaksi'] ?? 0);
                 $subtotal = ($qty * $hrg) - $raf;
 
+                $kodeBarang = !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null;
+                if (!$kodeBarang && !empty($item['nama_barang'])) {
+                    $brgFound = CugilBarang::where('nama_barang', $item['nama_barang'])->first();
+                    if ($brgFound) {
+                        $kodeBarang = $brgFound->kode_barang;
+                    }
+                }
+
                 CugilRawItem::create([
                     'cugil_raw_id' => $raw->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => $kodeBarang,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty' => $qty,
-                    'satuan' => $item['satuan'] ?? 'Kg',
+                    'satuan' => substr($item['satuan'] ?? 'Kg', 0, 10),
                     'harga_satuan' => $hrg,
                     'harga_total' => $qty * $hrg,
                     'diskon_rafaksi' => $raf,
@@ -484,8 +510,8 @@ class CugilTransaksiController extends Controller
                     'catatan' => $item['catatan'] ?? null,
                 ]);
 
-                if (!empty($item['kode_barang'])) {
-                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                if (!empty($kodeBarang)) {
+                    $brg = CugilBarang::where('kode_barang', $kodeBarang)->lockForUpdate()->first();
                     if ($brg) {
                         $brg->barang_masuk += $qty;
                         $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
@@ -493,13 +519,16 @@ class CugilTransaksiController extends Controller
                     }
                 }
             }
-
-            // Regenerate Jurnal DRAFT otomatis
-            $jurnalService = new JurnalAutoService();
-            $jurnalService->createJurnalPembelian($raw);
         });
 
         $raw = CugilRawMaterial::findOrFail($id);
+
+        // Regenerate Jurnal DRAFT otomatis secara aman
+        rescue(function () use ($raw) {
+            $jurnalService = app(\App\Services\JurnalAutoService::class);
+            $jurnalService->createJurnalPembelian($raw);
+        });
+
         return redirect()->route('cugil.raw.index')->with('success', 'Data penerimaan bahan baku ' . ($raw->nomor_po ?? 'RAW-'.$raw->id) . ' berhasil diperbarui.');
     }
 
@@ -519,10 +548,12 @@ class CugilTransaksiController extends Controller
                 $raw->status_lunas = ($raw->sisa_tagihan <= 0) ? 'LUNAS' : ($raw->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
 
                 if ($deltaPayment > 0) {
-                    $jurnalService = new JurnalAutoService();
-                    if ($jurnalService->createJurnalPelunasanHutang($raw, $deltaPayment)) {
-                        $autoJurnalMsg = ' Jurnal DRAFT pelunasan hutang telah dibuat.';
-                    }
+                    rescue(function () use ($raw, $deltaPayment, &$autoJurnalMsg) {
+                        $jurnalService = app(\App\Services\JurnalAutoService::class);
+                        if ($jurnalService->createJurnalPelunasanHutang($raw, $deltaPayment)) {
+                            $autoJurnalMsg = ' Jurnal DRAFT pelunasan hutang telah dibuat.';
+                        }
+                    });
                 }
             }
             if ($request->filled('truk')) {
@@ -569,16 +600,17 @@ class CugilTransaksiController extends Controller
         $totalPayment = CugilSale::sum('payment');
         $totalTerjual = CugilSale::sum('total_qty');
         $belumLunasCount = CugilSale::where('status_pelunasan', 'BELUM LUNAS')->count();
+        $nextIdPenjualan = CugilSale::generateNextIdPenjualan();
 
         return view('cugil.sales', compact(
-            'sales', 'customers', 'barangs', 'totalTagihan', 'totalPayment', 'totalTerjual', 'belumLunasCount'
+            'sales', 'customers', 'barangs', 'totalTagihan', 'totalPayment', 'totalTerjual', 'belumLunasCount', 'nextIdPenjualan'
         ));
     }
 
     public function storeSale(Request $request)
     {
         $request->validate([
-            'id_penjualan' => 'required|string|max:50|unique:cugil_sales,id_penjualan',
+            'id_penjualan' => 'nullable|string|max:50',
             'tanggal' => 'required|date',
             'kode_customer' => 'required|string',
             'items' => 'required|array|min:1',
@@ -593,12 +625,18 @@ class CugilTransaksiController extends Controller
             $fotoTimbanganPath = ImageCompressionService::compressAndStore($request->file('foto_timbangan'), 'timbangan_sales', 1400, 80);
         }
 
-        DB::transaction(function () use ($request, $fotoTimbanganPath) {
+        // Generate or ensure unique ID Penjualan
+        $idPenjualan = !empty($request->id_penjualan) ? trim($request->id_penjualan) : CugilSale::generateNextIdPenjualan();
+        if (CugilSale::where('id_penjualan', $idPenjualan)->exists()) {
+            $idPenjualan = CugilSale::generateNextIdPenjualan();
+        }
+
+        DB::transaction(function () use ($request, $fotoTimbanganPath, $idPenjualan) {
             $cust = CugilCustomer::where('kode_customer', $request->kode_customer)
                 ->orWhere('nama_customer', $request->kode_customer)
                 ->lockForUpdate()->first();
-            $kodeCustomer = $cust ? $cust->kode_customer : $request->kode_customer;
-            $namaBuyer = $cust ? $cust->nama_customer : $request->kode_customer;
+            $kodeCustomer = $cust ? $cust->kode_customer : substr($request->kode_customer, 0, 20);
+            $namaBuyer = $cust ? $cust->nama_customer : substr($request->kode_customer, 0, 100);
 
             $totalQty = 0;
             $totalSak = 0;
@@ -606,12 +644,12 @@ class CugilTransaksiController extends Controller
             $totalDiskon = 0;
 
             foreach ($request->items as $item) {
-                $qty = (float) $item['qty_terjual'];
-                $sak = (int) ($item['jumlah_sak'] ?? 0);
-                $hrg = (float) $item['harga_satuan'];
+                $qty = (float) ($item['qty_terjual'] ?? 0);
+                $sak = !empty($item['jumlah_sak']) ? (int) $item['jumlah_sak'] : 0;
+                $hrg = (float) ($item['harga_satuan'] ?? 0);
                 $subtotalAwal = $qty * $hrg;
-                $diskonP = (float) ($item['diskon_persen'] ?? 0);
-                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+                $diskonP = !empty($item['diskon_persen']) ? (float) $item['diskon_persen'] : 0;
+                $diskonRp = !empty($item['diskon_rupiah']) ? (float) $item['diskon_rupiah'] : ($subtotalAwal * $diskonP);
 
                 $totalQty += $qty;
                 $totalSak += $sak;
@@ -619,26 +657,29 @@ class CugilTransaksiController extends Controller
                 $totalDiskon += $diskonRp;
             }
 
-            $ongkir = (float) ($request->ongkos_angkut ?? 0);
+            $ongkir = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
             $tagihan = max(0, $totalBruto - $totalDiskon);
-            $payment = (float) ($request->payment ?? 0);
+            $payment = !empty($request->payment) ? (float) $request->payment : 0;
+            $feeMakelar = !empty($request->fee_makelar) ? (float) $request->fee_makelar : 0;
+            $ongkosKuli = !empty($request->ongkos_kuli) ? (float) $request->ongkos_kuli : 0;
+            $downPayment = !empty($request->down_payment) ? (float) $request->down_payment : 0;
             $sisaPiutang = max(0, $tagihan - $payment);
-            $statusPelunasan = ($payment >= $tagihan && $tagihan > 0) ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
+            $statusPelunasan = ($payment >= $tagihan && $tagihan > 0) ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : ($payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS'));
 
             $sale = CugilSale::create([
-                'id_penjualan' => $request->id_penjualan,
+                'id_penjualan' => $idPenjualan,
                 'tanggal' => $request->tanggal,
                 'kode_customer' => $kodeCustomer,
                 'nama_buyer' => $namaBuyer,
                 'tanggal_kirim' => $request->tanggal_kirim ?? $request->tanggal,
-                'sales' => $request->sales ?? 'ACH. CHUMAIDI',
-                'broker' => $request->broker,
-                'fee_makelar' => $request->fee_makelar ?? 0,
-                'truk' => $request->truk,
-                'status_broker_truk_lunas' => $request->status_broker_truk_lunas ?? 'LUNAS',
-                'ongkos_kuli' => $request->ongkos_kuli ?? 0,
+                'sales' => !empty($request->sales) ? substr($request->sales, 0, 50) : 'ACH. CHUMAIDI',
+                'broker' => !empty($request->broker) ? substr($request->broker, 0, 50) : null,
+                'fee_makelar' => $feeMakelar,
+                'truk' => !empty($request->truk) ? substr($request->truk, 0, 50) : null,
+                'status_broker_truk_lunas' => !empty($request->status_broker_truk_lunas) ? substr($request->status_broker_truk_lunas, 0, 20) : 'LUNAS',
+                'ongkos_kuli' => $ongkosKuli,
                 'ongkos_angkut' => $ongkir,
-                'down_payment' => $request->down_payment ?? 0,
+                'down_payment' => $downPayment,
                 'total_qty' => $totalQty,
                 'total_sak' => $totalSak,
                 'total_bruto' => $totalBruto,
@@ -655,19 +696,27 @@ class CugilTransaksiController extends Controller
             ]);
 
             foreach ($request->items as $item) {
-                $qty = (float) $item['qty_terjual'];
+                $qty = (float) ($item['qty_terjual'] ?? 0);
                 $qtyGudang = isset($item['qty_gudang']) && $item['qty_gudang'] !== '' ? (float) $item['qty_gudang'] : $qty;
-                $sak = (int) ($item['jumlah_sak'] ?? 0);
-                $hrg = (float) $item['harga_satuan'];
+                $sak = !empty($item['jumlah_sak']) ? (int) $item['jumlah_sak'] : 0;
+                $hrg = (float) ($item['harga_satuan'] ?? 0);
                 $subtotalAwal = $qty * $hrg;
-                $diskonP = (float) ($item['diskon_persen'] ?? 0);
-                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+                $diskonP = !empty($item['diskon_persen']) ? (float) $item['diskon_persen'] : 0;
+                $diskonRp = !empty($item['diskon_rupiah']) ? (float) $item['diskon_rupiah'] : ($subtotalAwal * $diskonP);
                 $subtotalNet = $subtotalAwal - $diskonRp;
+
+                $kodeBarang = !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null;
+                if (!$kodeBarang && !empty($item['nama_barang'])) {
+                    $brgFound = CugilBarang::where('nama_barang', $item['nama_barang'])->first();
+                    if ($brgFound) {
+                        $kodeBarang = $brgFound->kode_barang;
+                    }
+                }
 
                 CugilSaleItem::create([
                     'cugil_sale_id' => $sale->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => $kodeBarang,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty_gudang' => $qtyGudang,
                     'qty_terjual' => $qty,
                     'jumlah_sak' => $sak,
@@ -680,8 +729,8 @@ class CugilTransaksiController extends Controller
                 ]);
 
                 // Update stok keluar di master barang secara aman (Pessimistic Lock)
-                if (!empty($item['kode_barang'])) {
-                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                if (!empty($kodeBarang)) {
+                    $brg = CugilBarang::where('kode_barang', $kodeBarang)->lockForUpdate()->first();
                     if ($brg) {
                         $brg->barang_keluar += $qty;
                         $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
@@ -689,26 +738,33 @@ class CugilTransaksiController extends Controller
                     }
                 }
             }
-
-            // Generate Jurnal DRAFT otomatis
-            $jurnalService = new JurnalAutoService();
-            $jurnalService->createJurnalPenjualan($sale);
         });
 
-        // Auto-inisialisasi workflow checklist untuk Sale baru
-        $newSale = CugilSale::where('id_penjualan', $request->id_penjualan)->first();
+        $newSale = CugilSale::where('id_penjualan', $idPenjualan)->first();
+
+        // Auto-Generate Jurnal DRAFT Penjualan secara aman
         if ($newSale) {
-            WorkflowService::initializeChecklist(
-                'cugil_sales', CugilSale::class, $newSale->id, $newSale->id_penjualan,
-                'sales_order_created', auth()->user()->name ?? 'System'
-            );
-            // Auto-complete timbangan jika foto sudah ada
-            if ($newSale->foto_timbangan) {
-                WorkflowService::completeStep('cugil_sales', $newSale->id, 'sales_timbangan', auth()->user()->name ?? 'System', 'Foto timbangan dilampirkan saat pembuatan SO');
-            }
+            rescue(function () use ($newSale) {
+                $jurnalService = app(\App\Services\JurnalAutoService::class);
+                $jurnalService->createJurnalPenjualan($newSale);
+            });
         }
 
-        return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $request->id_penjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat. Jurnal DRAFT penjualan telah dibuat.');
+        // Auto-inisialisasi workflow checklist untuk Sale baru secara aman
+        if ($newSale) {
+            rescue(function () use ($newSale) {
+                WorkflowService::initializeChecklist(
+                    'cugil_sales', CugilSale::class, $newSale->id, $newSale->id_penjualan,
+                    'sales_order_created', auth()->user()->name ?? 'System'
+                );
+                // Auto-complete timbangan jika foto sudah ada
+                if ($newSale->foto_timbangan) {
+                    WorkflowService::completeStep('cugil_sales', $newSale->id, 'sales_timbangan', auth()->user()->name ?? 'System', 'Foto timbangan dilampirkan saat pembuatan SO');
+                }
+            });
+        }
+
+        return redirect()->route('cugil.sales.index')->with('success', 'Penjualan ' . $idPenjualan . ' (' . count($request->items) . ' item produk cacahan) berhasil dicatat. Jurnal DRAFT penjualan telah dibuat.');
     }
 
     public function updateSale(Request $request, $id)
@@ -741,12 +797,12 @@ class CugilTransaksiController extends Controller
             // 2. Delete old items
             $sale->items()->delete();
 
-            // 3. Customer lookup
+            // 3. Customer lookup with length guards
             $cust = CugilCustomer::where('kode_customer', $request->kode_customer)
                 ->orWhere('nama_customer', $request->kode_customer)
                 ->first();
-            $kodeCustomer = $cust ? $cust->kode_customer : $request->kode_customer;
-            $namaBuyer = $cust ? $cust->nama_customer : $request->kode_customer;
+            $kodeCustomer = $cust ? $cust->kode_customer : substr($request->kode_customer, 0, 20);
+            $namaBuyer = $cust ? $cust->nama_customer : substr($request->kode_customer, 0, 100);
 
             // 4. Handle photo upload
             $fotoTimbanganPath = $sale->foto_timbangan;
@@ -764,12 +820,12 @@ class CugilTransaksiController extends Controller
             $totalDiskon = 0;
 
             foreach ($request->items as $item) {
-                $qty = (float) $item['qty_terjual'];
-                $sak = (int) ($item['jumlah_sak'] ?? 0);
-                $hrg = (float) $item['harga_satuan'];
+                $qty = (float) ($item['qty_terjual'] ?? 0);
+                $sak = !empty($item['jumlah_sak']) ? (int) $item['jumlah_sak'] : 0;
+                $hrg = (float) ($item['harga_satuan'] ?? 0);
                 $subtotalAwal = $qty * $hrg;
-                $diskonP = (float) ($item['diskon_persen'] ?? 0);
-                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+                $diskonP = !empty($item['diskon_persen']) ? (float) $item['diskon_persen'] : 0;
+                $diskonRp = !empty($item['diskon_rupiah']) ? (float) $item['diskon_rupiah'] : ($subtotalAwal * $diskonP);
 
                 $totalQty += $qty;
                 $totalSak += $sak;
@@ -777,11 +833,14 @@ class CugilTransaksiController extends Controller
                 $totalDiskon += $diskonRp;
             }
 
-            $ongkir = (float) ($request->ongkos_angkut ?? 0);
+            $ongkir = !empty($request->ongkos_angkut) ? (float) $request->ongkos_angkut : 0;
             $tagihan = max(0, $totalBruto - $totalDiskon);
-            $payment = isset($request->payment) ? (float) $request->payment : (float) $sale->payment;
+            $payment = isset($request->payment) && $request->payment !== '' ? (float) $request->payment : (float) $sale->payment;
+            $feeMakelar = isset($request->fee_makelar) && $request->fee_makelar !== '' ? (float) $request->fee_makelar : (float) $sale->fee_makelar;
+            $ongkosKuli = isset($request->ongkos_kuli) && $request->ongkos_kuli !== '' ? (float) $request->ongkos_kuli : (float) $sale->ongkos_kuli;
+            $downPayment = isset($request->down_payment) && $request->down_payment !== '' ? (float) $request->down_payment : (float) $sale->down_payment;
             $sisaPiutang = max(0, $tagihan - $payment);
-            $statusPelunasan = ($payment >= $tagihan && $tagihan > 0) ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : 'BELUM LUNAS');
+            $statusPelunasan = ($payment >= $tagihan && $tagihan > 0) ? 'LUNAS' : ($tagihan == 0 && $payment == 0 ? 'LUNAS' : ($payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS'));
 
             // 6. Update Sale header (id_penjualan remains read-only / unchanged)
             $sale->update([
@@ -789,14 +848,14 @@ class CugilTransaksiController extends Controller
                 'kode_customer' => $kodeCustomer,
                 'nama_buyer' => $namaBuyer,
                 'tanggal_kirim' => $request->tanggal_kirim ?? $request->tanggal,
-                'sales' => $request->sales ?? $sale->sales,
-                'broker' => $request->broker ?? $sale->broker,
-                'fee_makelar' => $request->fee_makelar ?? $sale->fee_makelar,
-                'truk' => $request->truk ?? $sale->truk,
-                'status_broker_truk_lunas' => $request->status_broker_truk_lunas ?? $sale->status_broker_truk_lunas,
-                'ongkos_kuli' => $request->ongkos_kuli ?? $sale->ongkos_kuli,
+                'sales' => !empty($request->sales) ? substr($request->sales, 0, 50) : $sale->sales,
+                'broker' => !empty($request->broker) ? substr($request->broker, 0, 50) : $sale->broker,
+                'fee_makelar' => $feeMakelar,
+                'truk' => !empty($request->truk) ? substr($request->truk, 0, 50) : $sale->truk,
+                'status_broker_truk_lunas' => !empty($request->status_broker_truk_lunas) ? substr($request->status_broker_truk_lunas, 0, 20) : $sale->status_broker_truk_lunas,
+                'ongkos_kuli' => $ongkosKuli,
                 'ongkos_angkut' => $ongkir,
-                'down_payment' => $request->down_payment ?? $sale->down_payment,
+                'down_payment' => $downPayment,
                 'total_qty' => $totalQty,
                 'total_sak' => $totalSak,
                 'total_bruto' => $totalBruto,
@@ -812,19 +871,27 @@ class CugilTransaksiController extends Controller
 
             // 7. Create new items and apply stock out
             foreach ($request->items as $item) {
-                $qty = (float) $item['qty_terjual'];
+                $qty = (float) ($item['qty_terjual'] ?? 0);
                 $qtyGudang = isset($item['qty_gudang']) && $item['qty_gudang'] !== '' ? (float) $item['qty_gudang'] : $qty;
-                $sak = (int) ($item['jumlah_sak'] ?? 0);
-                $hrg = (float) $item['harga_satuan'];
+                $sak = !empty($item['jumlah_sak']) ? (int) $item['jumlah_sak'] : 0;
+                $hrg = (float) ($item['harga_satuan'] ?? 0);
                 $subtotalAwal = $qty * $hrg;
-                $diskonP = (float) ($item['diskon_persen'] ?? 0);
-                $diskonRp = (float) ($item['diskon_rupiah'] ?? ($subtotalAwal * $diskonP));
+                $diskonP = !empty($item['diskon_persen']) ? (float) $item['diskon_persen'] : 0;
+                $diskonRp = !empty($item['diskon_rupiah']) ? (float) $item['diskon_rupiah'] : ($subtotalAwal * $diskonP);
                 $subtotalNet = $subtotalAwal - $diskonRp;
+
+                $kodeBarang = !empty($item['kode_barang']) ? substr($item['kode_barang'], 0, 20) : null;
+                if (!$kodeBarang && !empty($item['nama_barang'])) {
+                    $brgFound = CugilBarang::where('nama_barang', $item['nama_barang'])->first();
+                    if ($brgFound) {
+                        $kodeBarang = $brgFound->kode_barang;
+                    }
+                }
 
                 CugilSaleItem::create([
                     'cugil_sale_id' => $sale->id,
-                    'kode_barang' => $item['kode_barang'] ?? null,
-                    'nama_barang' => $item['nama_barang'],
+                    'kode_barang' => $kodeBarang,
+                    'nama_barang' => substr($item['nama_barang'], 0, 100),
                     'qty_gudang' => $qtyGudang,
                     'qty_terjual' => $qty,
                     'jumlah_sak' => $sak,
@@ -836,8 +903,8 @@ class CugilTransaksiController extends Controller
                     'catatan' => $item['catatan'] ?? null,
                 ]);
 
-                if (!empty($item['kode_barang'])) {
-                    $brg = CugilBarang::where('kode_barang', $item['kode_barang'])->lockForUpdate()->first();
+                if (!empty($kodeBarang)) {
+                    $brg = CugilBarang::where('kode_barang', $kodeBarang)->lockForUpdate()->first();
                     if ($brg) {
                         $brg->barang_keluar += $qty;
                         $brg->stok_akhir = $brg->stok_awal + $brg->barang_masuk - $brg->barang_keluar;
@@ -845,13 +912,16 @@ class CugilTransaksiController extends Controller
                     }
                 }
             }
-
-            // Regenerate auto journal for sales
-            $jurnalService = new JurnalAutoService();
-            $jurnalService->createJurnalPenjualan($sale);
         });
 
         $sale = CugilSale::findOrFail($id);
+
+        // Regenerate auto journal for sales secara aman
+        rescue(function () use ($sale) {
+            $jurnalService = app(\App\Services\JurnalAutoService::class);
+            $jurnalService->createJurnalPenjualan($sale);
+        });
+
         return redirect()->route('cugil.sales.index')->with('success', 'Transaksi Penjualan ' . $sale->id_penjualan . ' berhasil diperbarui.');
     }
 
@@ -875,10 +945,12 @@ class CugilTransaksiController extends Controller
                 $sale->status_pelunasan = ($sale->sisa_piutang <= 0) ? 'LUNAS' : ($sale->payment > 0 ? 'SEBAGIAN' : 'BELUM LUNAS');
 
                 if ($deltaPayment > 0) {
-                    $jurnalService = new JurnalAutoService();
-                    if ($jurnalService->createJurnalPelunasanPiutang($sale, $deltaPayment)) {
-                        $autoJurnalMsg = ' Jurnal DRAFT pelunasan piutang telah dibuat.';
-                    }
+                    rescue(function () use ($sale, $deltaPayment, &$autoJurnalMsg) {
+                        $jurnalService = app(\App\Services\JurnalAutoService::class);
+                        if ($jurnalService->createJurnalPelunasanPiutang($sale, $deltaPayment)) {
+                            $autoJurnalMsg = ' Jurnal DRAFT pelunasan piutang telah dibuat.';
+                        }
+                    });
                 }
             }
             if ($request->filled('broker')) {
@@ -940,6 +1012,17 @@ class CugilTransaksiController extends Controller
     }
 
     // ─── PRINTABLE COMMERCIAL DOCUMENTS ─────────────────────────────────────────
+
+    public function showSale($id)
+    {
+        $sale = CugilSale::with(['customer', 'items.barang'])->findOrFail($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($sale);
+        }
+
+        return redirect()->route('cugil.sales.so', $id);
+    }
 
     public function printSalesOrder($id)
     {

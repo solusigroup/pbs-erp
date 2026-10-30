@@ -93,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('sales')->name('sales.')->group(function () {
             Route::get('/',                 [CugilTransaksiController::class, 'sales'])->name('index');
             Route::post('/',                [CugilTransaksiController::class, 'storeSale'])->name('store');
+            Route::get('/{id}',             [CugilTransaksiController::class, 'showSale'])->name('show');
             Route::put('/{id}',             [CugilTransaksiController::class, 'updateSale'])->name('update');
             Route::put('/{id}/status',      [CugilTransaksiController::class, 'updateSaleStatus'])->name('updateStatus');
             Route::post('/{id}/upload-timbangan', [CugilTransaksiController::class, 'uploadFotoTimbangan'])->name('uploadTimbangan');

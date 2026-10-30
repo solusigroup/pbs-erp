@@ -339,7 +339,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-900/60 p-4 rounded-xl border border-gray-700">
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">ID / No Penjualan *</label>
-                    <input type="text" name="id_penjualan" value="SALES-{{ rand(600, 999) }}/{{ date('n/Y') }}" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500" required>
+                    <input type="text" name="id_penjualan" value="{{ $nextIdPenjualan ?? ('SALES-' . rand(600, 999) . '/' . date('n/Y')) }}" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono" required>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Tanggal Transaksi *</label>

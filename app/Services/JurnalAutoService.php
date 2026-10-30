@@ -206,6 +206,38 @@ class JurnalAutoService
         $nomorInvoice = $sale->id_penjualan;
         $keterangan = trim($sale->remark ?? $sale->keterangan ?? '');
 
+        // Pastikan akun COA tersedia di DB agar foreign key tidak fail
+        \App\Models\Akun::firstOrCreate(
+            ['kode_akun' => '1-1300'],
+            [
+                'nama_akun' => 'Piutang Usaha Proyek',
+                'kategori' => 'Aset Lancar',
+                'tipe_akun' => 'Piutang',
+                'saldo_normal' => 'Debit',
+                'is_active' => true,
+            ]
+        );
+        \App\Models\Akun::firstOrCreate(
+            ['kode_akun' => self::DEFAULT_KAS_CODE],
+            [
+                'nama_akun' => 'Bank BCA Rek Operasional',
+                'kategori' => 'Aset Lancar',
+                'tipe_akun' => 'Kas & Bank',
+                'saldo_normal' => 'Debit',
+                'is_active' => true,
+            ]
+        );
+        \App\Models\Akun::firstOrCreate(
+            ['kode_akun' => '4-1100'],
+            [
+                'nama_akun' => 'Pendapatan Kontrak Jasa & Pengadaan',
+                'kategori' => 'Pendapatan',
+                'tipe_akun' => 'Pendapatan',
+                'saldo_normal' => 'Kredit',
+                'is_active' => true,
+            ]
+        );
+
         $noTransaksi = $this->generateNoTransaksi(self::PREFIX_PENJUALAN, $tanggal);
 
         $details = [];
@@ -245,11 +277,12 @@ class JurnalAutoService
         }
 
         // Debit: Kas/Bank (jika ada pembayaran langsung / DP)
-        if ($payment > 0) {
+        $paymentApplied = min($payment, $tagihan);
+        if ($paymentApplied > 0) {
             $details[] = [
                 'kode_akun' => self::DEFAULT_KAS_CODE,
                 'keterangan_baris' => "Penerimaan kas penjualan - {$namaCustomer} (INV: {$nomorInvoice})",
-                'debit' => $payment,
+                'debit' => $paymentApplied,
                 'kredit' => 0,
             ];
         }

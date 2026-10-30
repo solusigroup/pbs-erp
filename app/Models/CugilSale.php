@@ -59,4 +59,19 @@ class CugilSale extends Model
 
         return asset('storage/' . ltrim($this->foto_timbangan, '/'));
     }
+
+    /**
+     * Generate ID Penjualan berikutnya secara otomatis dan aman dari tabrakan sequence.
+     * Format: SALES-{seq}/{m}/{Y}
+     */
+    public static function generateNextIdPenjualan(): string
+    {
+        $maxSeq = static::where('id_penjualan', 'like', 'SALES-%')
+            ->selectRaw('MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(id_penjualan, "/", 1), "SALES-", -1) AS UNSIGNED)) as max_seq')
+            ->value('max_seq');
+
+        $nextSeq = ($maxSeq && $maxSeq >= 500) ? ($maxSeq + 1) : 513;
+
+        return 'SALES-' . $nextSeq . '/' . date('n') . '/' . date('Y');
+    }
 }
