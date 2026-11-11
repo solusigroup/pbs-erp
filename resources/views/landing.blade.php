@@ -265,6 +265,46 @@
                         <span class="text-[11px] text-slate-600 block">Kota Mojokerto, Jawa Timur (61315)</span>
                     </div>
                 </div>
+
+                <!-- Legalitas KBLI Terdaftar OSS BKPM -->
+                <div class="border-t border-slate-100 mt-6 pt-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Klasifikasi Bidang Usaha Resmi (KBLI OSS Berbasis Risiko):</span>
+                            <span class="text-[10px] bg-[#1B4D3E]/10 text-[#1B4D3E] font-bold px-2 py-0.5 rounded-full">5 KBLI Terdaftar</span>
+                        </div>
+                        <a href="#engineering" class="text-[11px] font-semibold text-[#1B4D3E] hover:underline flex items-center gap-1">
+                            Lihat Rincian Teknis &amp; Rekayasa <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-cyan-500/50 transition">
+                            <span class="text-[10px] font-black font-mono text-cyan-700 bg-cyan-100/70 border border-cyan-200 px-2 py-0.5 rounded-md">KBLI 46796</span>
+                            <div class="text-xs font-bold text-[#0B0F19] mt-1.5 leading-snug">Perdagangan Skrap</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Barang bekas, skrap &amp; sisa daur ulang</div>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500/50 transition">
+                            <span class="text-[10px] font-black font-mono text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md">KBLI 38302</span>
+                            <div class="text-xs font-bold text-[#0B0F19] mt-1.5 leading-snug">Pemulihan Material</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Pencacahan plastik &amp; bahan bakar RDF</div>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500/50 transition">
+                            <span class="text-[10px] font-black font-mono text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md">KBLI 38212</span>
+                            <div class="text-xs font-bold text-[#0B0F19] mt-1.5 leading-snug">Kompos Organik</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Pengolahan limbah organik TPST</div>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-amber-500/50 transition">
+                            <span class="text-[10px] font-black font-mono text-amber-700 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded-md">KBLI 28199</span>
+                            <div class="text-xs font-bold text-[#0B0F19] mt-1.5 leading-snug">Mesin Umum Ytdl</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Konveyor &amp; trommel screen pemilah</div>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-amber-500/50 transition">
+                            <span class="text-[10px] font-black font-mono text-amber-700 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded-md">KBLI 28299</span>
+                            <div class="text-xs font-bold text-[#0B0F19] mt-1.5 leading-snug">Mesin Khusus RDF</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Shredder RDF &amp; mesin press hidrolik</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 2-Column: About Description & Visi Misi -->
@@ -277,7 +317,7 @@
                             <span>Penggerak Rantai Pasok Hijau Nasional</span>
                         </h3>
                         <p class="text-xs sm:text-sm leading-relaxed text-slate-600 text-justify">
-                            <strong class="text-[#0B0F19] font-bold">PT Pinastika Bhakti Semesta (PBS)</strong> adalah perusahaan sirkular ekonomi berbadan hukum resmi yang beroperasi di Mojokerto, Jawa Timur. PBS memadukan teknologi pengolahan sampah anorganik &amp; organik, pemilahan dan pencucian plastik (*Cuci Giling / CUGIL*), rekayasa permesinan mekanikal mandiri, serta produksi bahan bakar alternatif ramah lingkungan <strong class="text-[#1B4D3E] font-bold">Refuse Derived Fuel (RDF)</strong>.
+                            <strong class="text-[#0B0F19] font-bold">PT Pinastika Bhakti Semesta (PBS)</strong> adalah perusahaan sirkular ekonomi berbadan hukum resmi yang beroperasi di Mojokerto, Jawa Timur. PBS memadukan perdagangan besar barang bekas &amp; skrap daur ulang (KBLI 46796), teknologi pengolahan sampah anorganik &amp; organik, pemilahan dan pencucian plastik (*Cuci Giling / CUGIL*), rekayasa permesinan mekanikal mandiri, serta produksi bahan bakar alternatif ramah lingkungan <strong class="text-[#1B4D3E] font-bold">Refuse Derived Fuel (RDF)</strong>.
                         </p>
                         <p class="text-xs leading-relaxed text-slate-600 text-justify">
                             Dalam rangka mendukung program Dekarbonisasi Nasional dan transisi energi bersih, PT PBS menjadi mitra penyedia pasokan RDF ke <strong class="text-[#0B0F19] font-bold">PT Semen Indonesia (Persero) Tbk Pabrik Tuban</strong>, sekaligus menyerap dan mengolah sampah dari berbagai TPST mitra daerah se-Jawa Timur.
@@ -285,7 +325,7 @@
 
                         <div class="grid grid-cols-2 gap-3 pt-2">
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
-                                <div class="text-xl font-black text-[#1B4D3E]">4 KBLI</div>
+                                <div class="text-xl font-black text-[#1B4D3E]">5 KBLI</div>
                                 <div class="text-[10px] text-slate-500 mt-0.5">Bidang Usaha OSS Resmi</div>
                             </div>
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
@@ -427,17 +467,33 @@
                 </div>
             </div>
 
-            <!-- 4 KBLI Cards (High-Contrast Slate Dark Design) -->
+            <!-- 5 KBLI Cards (High-Contrast Slate Dark Design) -->
             <div class="space-y-6">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                         <i class="fas fa-certificate text-amber-400"></i>
-                        <span>Portofolio 4 Klasifikasi Baku Lapangan Usaha (KBLI OSS BKPM)</span>
+                        <span>Portofolio 5 Klasifikasi Baku Lapangan Usaha (KBLI OSS BKPM)</span>
                     </h3>
                     <span class="text-xs text-amber-400 font-mono">NIB: 1911210009629</span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                    <!-- KBLI 46796 -->
+                    <div class="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 space-y-3 hover:border-cyan-400 hover:-translate-y-1 transition duration-200">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-black font-mono border border-cyan-500/30">
+                                KBLI 46796
+                            </span>
+                            <span class="text-[9px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">
+                                Skrap &amp; Daur Ulang
+                            </span>
+                        </div>
+                        <h4 class="text-xs font-black text-white leading-snug">Perdagangan Besar Barang Bekas dan Skrap</h4>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            Perdagangan besar, agregasi, pemilahan, dan penyaluran barang bekas, skrap logam &amp; bukan logam, serta suplai bahan baku daur ulang dan pasokan RDF.
+                        </p>
+                    </div>
+
                     <!-- KBLI 28199 -->
                     <div class="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 space-y-3 hover:border-amber-400 hover:-translate-y-1 transition duration-200">
                         <div class="flex items-center justify-between">
